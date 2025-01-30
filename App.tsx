@@ -1,7 +1,8 @@
 import React,{ useState } from 'react';
-import { View, ImageBackground, StyleSheet, TouchableOpacity, Image, Text ,TextInput , ScrollView} from 'react-native';
+import { View, ImageBackground, StyleSheet, TouchableOpacity, Image, Text ,TextInput , ScrollView,SafeAreaView,KeyboardAvoidingView,Alert} from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackScreenProps  } from '@react-navigation/native-stack';
+import UserProfile from './userp.jsx';
 
 
 // Define the ParamList for the Navigator
@@ -11,6 +12,7 @@ type RootStackParamList = {
   Employee:undefined;
   Employeer1:undefined;
   home1:undefined;
+  user1:undefined;
 };
 
 // Define Props for HomeScreen
@@ -18,6 +20,9 @@ type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Home'>;
 type EmpScreenProps = NativeStackScreenProps<RootStackParamList, 'Details'>;
 type pg3ScreenProps = NativeStackScreenProps<RootStackParamList, 'Employee'>;
 type pg4ScreenProps = NativeStackScreenProps<RootStackParamList, 'Employeer1'>;
+type home1ScreenProps = NativeStackScreenProps<RootStackParamList, 'home1'>;
+
+
 // Local or Remote Image
 const backgroundImage = {
   uri: 'https://i.postimg.cc/zBF1bgxP/Android-Compact-5-2.png',
@@ -85,60 +90,132 @@ const DetailsScreen = ({ navigation }: EmpScreenProps) => {
 };
 
 //page 3
-const EmployeePg = ({ navigation }:pg3ScreenProps) => {
+const EmployeePg = ({ navigation }: pg3ScreenProps) => {
   const [selectedTab, setSelectedTab] = useState<'login' | 'signup'>('login');
+  const [passwordVisible, setPasswordVisible] = useState(false); // For password visibility toggle
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false); // For confirm password visibility toggle
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Function to handle SignUp and validate password match
+  const handleSignUp = () => {
+    if (password !== confirmPassword) {
+      Alert.alert('Passwords do not match', 'Please ensure both passwords are the same.');
+      return;
+    }
+    navigation.navigate('home1');
+  };
+
   return (
-    <View style={styles.one}>
-      <View style={styles.car}>
-        <Image source={{uri:'https://i.postimg.cc/nrmw5sWG/rb-1596-1-1.png'}} style={{height:170,width:200,left:100,top:70}}></Image>
-      </View>
-      <View style={styles.bike1}>
-        <TouchableOpacity
-          style={[styles.login, selectedTab == 'login' && styles.loginselec]}
-          onPress={() => setSelectedTab('login')}
-        >
-          <Text>Login</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.signup, selectedTab == 'signup' && styles.signupselec]}
-          onPress={() => setSelectedTab('signup')}
-        >
-          <Text>Signup</Text>
-        </TouchableOpacity>
-        {
-          selectedTab==='login'?(
-        <View style={styles.pass}>
-          <Text style={{left:-131,marginBottom:10,fontWeight:'bold'}}>Email</Text>
-          <TextInput
-            placeholder="Enter your email"
-            placeholderTextColor="#808080" // Set placeholder color
-            style={[styles.email, styles.textcolor]}
-          />
-          <Text style={{left:-120,marginBottom:10,fontWeight:'bold'}}>Password</Text>
-          <TextInput
-            placeholder="Enter the password"
-            placeholderTextColor="#808080" // Set placeholder color
-            style={[styles.pass1, styles.textcolor]}
-            secureTextEntry // Ensure password input is masked
-          />
-          <TouchableOpacity style={styles.loginbtn} onPress={() => {navigation.navigate('home1')}}><Text>Login</Text></TouchableOpacity>
-        </View>): (
-          <View style={styles.signupv}>
-            <Text style={styles.name}>Name</Text>
-            <TextInput style={styles.name1}/>
-            <Text style={styles.phone}>Phone</Text>
-            <TextInput style={styles.phone1}/>
-            <Text style={styles.emaill}>Email</Text>
-            <TextInput style={styles.email1}/>
-            <Text style={styles.passw}>Password</Text>
-            <TextInput style={styles.passw1}/>
-            <Text style={styles.cpass}>Confirm Password</Text>
-            <TextInput style={styles.cpass1}/>
-            <TouchableOpacity style={styles.loginbtn} onPress={() => {navigation.navigate('home1')}}><Text style={{fontWeight:'bold',}}>Sign Up</Text></TouchableOpacity>
-                      </View>
-        )}
-      </View>
-    </View>
+    <SafeAreaView style={{ flex: 1 }}>
+      <KeyboardAvoidingView style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+          <View style={styles.one}>
+            <View style={styles.car}>
+              <Image source={{ uri: 'https://i.postimg.cc/nrmw5sWG/rb-1596-1-1.png' }} style={{ height: 170, width: 200, left: 100, top: 70 }} />
+            </View>
+            <View style={styles.bike1}>
+              <TouchableOpacity
+                style={[styles.login, selectedTab == 'login' && styles.loginselec]}
+                onPress={() => setSelectedTab('login')}
+              >
+                <Text>Login</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.signup, selectedTab == 'signup' && styles.signupselec]}
+                onPress={() => setSelectedTab('signup')}
+              >
+                <Text>Signup</Text>
+              </TouchableOpacity>
+
+              {selectedTab === 'login' ? (
+                <View style={styles.signupv}>
+                <View style={styles.EmployeePgContainer}>
+                  
+
+                  
+
+                  <View style={styles.unit}>
+                    <Text>Email</Text>
+                    <TextInput placeholder="Email" placeholderTextColor="#808080" style={styles.unitInput} />
+                  </View>
+
+                  <View style={styles.unit}>
+                    <Text>Password</Text>
+                    <TextInput
+                      placeholder="Password"
+                      placeholderTextColor="#808080"
+                      style={styles.unitInput}
+                      secureTextEntry={!passwordVisible}
+                      onChangeText={setPassword}
+                    />
+                    <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)}>
+                      <Text style={styles.showhide}>{passwordVisible ? 'Hide' : 'Show'}</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  
+                </View>
+                <TouchableOpacity style={styles.loginbtn} onPress={handleSignUp}>
+                  <Text style={{ fontWeight: 'bold' }}>Log In</Text>
+                </TouchableOpacity>
+              </View>
+              ) : (
+                <View style={styles.signupv}>
+                  <View style={styles.EmployeePgContainer}>
+                    <View style={styles.unit}>
+                      <Text>Name</Text>
+                      <TextInput placeholder="Name" placeholderTextColor="#808080" style={styles.unitInput} />
+                    </View>
+
+                    <View style={styles.unit}>
+                      <Text>Phone</Text>
+                      <TextInput placeholder="Phone number" placeholderTextColor="#808080" style={styles.unitInput} />
+                    </View>
+
+                    <View style={styles.unit}>
+                      <Text>Email</Text>
+                      <TextInput placeholder="Email" placeholderTextColor="#808080" style={styles.unitInput} />
+                    </View>
+
+                    <View style={styles.unit}>
+                      <Text>Password</Text>
+                      <TextInput
+                        placeholder="Password"
+                        placeholderTextColor="#808080"
+                        style={styles.unitInput}
+                        secureTextEntry={!passwordVisible}
+                        onChangeText={setPassword}
+                      />
+                      <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)}>
+                        <Text style={styles.showhide}>{passwordVisible ? 'Hide' : 'Show'}</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.unit}>
+                      <Text>Confirm Password</Text>
+                      <TextInput
+                        placeholder="Confirm password"
+                        placeholderTextColor="#808080"
+                        style={styles.unitInput}
+                        secureTextEntry={!confirmPasswordVisible}
+                        onChangeText={setConfirmPassword}
+                      />
+                      <TouchableOpacity onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}>
+                        <Text style={styles.showhide}>{confirmPasswordVisible ? 'Hide' : 'Show'}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  <TouchableOpacity style={styles.loginbtn} onPress={handleSignUp}>
+                    <Text style={{ fontWeight: 'bold' }}>Sign Up</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 const Employeer = ({ navigation }:pg4ScreenProps) => {
@@ -198,16 +275,14 @@ const Employeer = ({ navigation }:pg4ScreenProps) => {
   );
 };
 //page 4
-const home = () => {
+const home = ({ navigation }:home1ScreenProps) => {
   return (
     <ScrollView style={styles.container1}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.placeholderIcon} />
-        <View style={styles.headerIcons}>
-          <View style={styles.placeholderIcon} />
-          <View style={styles.placeholderIcon} />
-        </View>
+        <TouchableOpacity onPress={()=>{navigation.navigate('user1')}}>
+          <Text>Profile</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Search Bar */}
@@ -312,12 +387,42 @@ export default function App() {
         <Stack.Screen name="Employee" component={EmployeePg}/>
         <Stack.Screen name="Employeer1" component={Employeer}/>
         <Stack.Screen name="home1" component={home}/>
+        <Stack.Screen name="user1" component={UserProfile}/>
+        
+       
+
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
 
 const styles = StyleSheet.create({
+  //styles by nikhil
+  EmployeePgContainer:{
+    padding:10,
+  },
+  unit:{
+    margin:10
+  },
+  unitInput:{
+    marginTop:5,
+     borderWidth:0,
+     width:"95%",
+     height:40,
+     borderRadius:25,
+     backgroundColor:'#E5E5E5',
+     color:'black'
+
+  },
+  showhide:{
+    color:'#1294FF',
+    textAlign:'right',
+    marginRight:'5%'
+  },
+  //style end
+
+
+
   //page 1 and 2
   container: {
     flex: 1, // Ensures the container takes the full screen
@@ -490,17 +595,17 @@ const styles = StyleSheet.create({
   },
   loginbtn:{
    width:300,
-   height:25,
+   height:40,
    alignItems:'center',
    justifyContent:'center',
    backgroundColor:'#1294FF',
-   borderWidth:2,
+   borderWidth:0,
    borderColor:'#000000',
    borderRadius:25,
+   margin:'auto'
   },
   signupv:{
-    alignItems:'center',
-    justifyContent:'center',
+    
   },
   name:{
     top:20,
