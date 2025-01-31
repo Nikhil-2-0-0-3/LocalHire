@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const UserProfile = () => {
@@ -36,6 +36,66 @@ const UserProfile = () => {
           <Text style={styles.numberText}>0</Text>
         </View>
       </View>
+
+      <View style={{ padding: 15 }}>
+  {/* Personal Profile */}
+  <View style={styles.menuItem}>
+    <Image source={require('./assets/Vector.png')} style={styles.icon} />
+    <Text style={styles.menuText}>Personal Profile</Text>
+    <TouchableOpacity>
+      <Image source={require('./assets/chevron-right.png')} style={styles.chevron} />
+    </TouchableOpacity>
+  </View>
+
+  {/* Change Password */}
+  <View style={styles.menuItem}>
+    <Image source={require('./assets/Frame.png')} style={styles.icon} />
+    <Text style={styles.menuText}>Change Password</Text>
+    <TouchableOpacity>
+      <Image source={require('./assets/chevron-right.png')} style={styles.chevron} />
+    </TouchableOpacity>
+  </View>
+
+  {/* Job Applied */}
+  <View style={styles.menuItem}>
+    <Image source={require('./assets/job.png')} style={styles.icon} />
+    <Text style={styles.menuText}>Job Applied</Text>
+    <TouchableOpacity>
+      <Image source={require('./assets/chevron-right.png')} style={styles.chevron} />
+    </TouchableOpacity>
+  </View>
+
+  {/* Favorite Job */}
+  <View style={styles.menuItem}>
+    <Image source={require('./assets/love.png')} style={styles.icon} />
+    <Text style={styles.menuText}>Favorite Job</Text>
+    <TouchableOpacity>
+      <Image source={require('./assets/chevron-right.png')} style={styles.chevron} />
+    </TouchableOpacity>
+  </View>
+
+  
+
+  {/* Settings */}
+  <View style={styles.menuItem}>
+    <Image source={require('./assets/settings.png')} style={styles.icon} />
+    <Text style={styles.menuText}>Settings</Text>
+    <TouchableOpacity>
+      <Image source={require('./assets/chevron-right.png')} style={styles.chevron} />
+    </TouchableOpacity>
+  </View>
+</View>
+<View style={styles.logout}>
+<View style={styles.menuItem}>
+    <Image source={require('./assets/logout.png')} style={styles.icon} />
+    <Text style={styles.logoutt}>Logout</Text>
+    <TouchableOpacity>
+      <Image source={require('./assets/chevron-right.png')} style={styles.logouti} />
+    </TouchableOpacity>
+  </View>
+        
+      </View>
+
     </SafeAreaView>
   );
 };
@@ -101,6 +161,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-evenly', // Evenly distribute the columns
     marginTop: 30,
     width: '100%',
+    paddingBottom:50,
   },
   column: {
     alignItems: 'center',
@@ -115,6 +176,49 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#0057FF', // Blue color for the number
   },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  icon: {
+    width: 24,
+    height: 24,
+    marginRight: 15,
+  },
+  menuText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+  },
+  chevron: {
+    width: 20,
+    height: 20,
+    
+  },
+  logout:{
+    height: 50, // Increased height for better spacing
+    backgroundColor: '#E5020B',
+    borderRadius: 25,
+    flexDirection: 'row',
+    marginBottom: 30, // Add space below the profile section
+    paddingHorizontal: 15, // Ensure text and image don't touch the edges
+    alignItems: 'center',
+    top:50, // Vertically align the items
+  },
+  logoutt:{
+    flex: 1,
+    fontSize: 15,
+    color: '#FFFFFF',
+  },
+  logouti:{
+    width: 20,
+    height: 20,
+    tintColor:'#FFFFFF',
+  }
 });
 
 export default UserProfile;

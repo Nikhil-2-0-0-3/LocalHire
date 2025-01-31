@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "104219814964",
+    "project_id": "localhire-cb5a2",
+    "storage_bucket": "localhire-cb5a2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:104219814964:android:e4f75c3f432795cd41ee61",
+        "android_client_info": {
+          "package_name": "com.localhire"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDHCatdONf_03gbzT0E9QwU5yt6lEaNI7g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

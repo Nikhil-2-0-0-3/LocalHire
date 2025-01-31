@@ -3,6 +3,8 @@ import { View, ImageBackground, StyleSheet, TouchableOpacity, Image, Text ,TextI
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackScreenProps  } from '@react-navigation/native-stack';
 import UserProfile from './userp.jsx';
+import EmployeePg2 from './employeePg2.tsx';
+import SearchBar from './components/SearchBar.tsx';
 
 
 // Define the ParamList for the Navigator
@@ -13,6 +15,7 @@ type RootStackParamList = {
   Employeer1:undefined;
   home1:undefined;
   user1:undefined;
+  EmployeePg2:undefined;
 };
 
 // Define Props for HomeScreen
@@ -31,19 +34,21 @@ const backgroundImage = {
 //page 1
 const HomeScreen = ({ navigation }: HomeScreenProps) => {
   return (
-    <View style={styles.container}>
-      <ImageBackground source={backgroundImage} style={styles.imageBackground}>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate('Details')}
-        >
-          <Image
-            source={{ uri: 'https://i.postimg.cc/1zb41VXz/right-arrow.png' }}
-            style={styles.buttonImage}
-          />
-        </TouchableOpacity>
-      </ImageBackground>
-    </View>
+    <SafeAreaView style={{ flex: 1 }}>
+      <View style={styles.container}>
+        <ImageBackground source={backgroundImage} style={styles.imageBackground}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.navigate('Details')}
+          >
+            <Image
+              source={{ uri: 'https://i.postimg.cc/1zb41VXz/right-arrow.png' }}
+              style={styles.buttonImage}
+            />
+          </TouchableOpacity>
+        </ImageBackground>
+      </View>
+    </SafeAreaView>
   );
 };
 //page 2
@@ -79,7 +84,7 @@ const DetailsScreen = ({ navigation }: EmpScreenProps) => {
         <TouchableOpacity
           style={styles.rightbtn}
           onPress={() => {
-            navigation.navigate('Employeer1');
+            navigation.navigate('Employee');
           }}
         >
           <Text style={{ fontWeight: 'bold' }}>Employer</Text>
@@ -218,6 +223,7 @@ const EmployeePg = ({ navigation }: pg3ScreenProps) => {
     </SafeAreaView>
   );
 };
+
 const Employeer = ({ navigation }:pg4ScreenProps) => {
   const [selectedTab, setSelectedTab] = useState<'login' | 'signup'>('login');
   return (
@@ -286,12 +292,10 @@ const home = ({ navigation }:home1ScreenProps) => {
       </View>
 
       {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <TextInput style={styles.searchInput} placeholder="Search Job here ..." />
-        <TouchableOpacity style={styles.filterButton}>
-          <Text style={styles.filterText}>Filter</Text>
-        </TouchableOpacity>
-      </View>
+      
+      <SearchBar/>
+
+
 
       {/* Top Rated Employees */}
       <Text style={styles.sectionTitle}>Top Rated Employees</Text>
@@ -384,7 +388,7 @@ export default function App() {
       >
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Details" component={DetailsScreen} />
-        <Stack.Screen name="Employee" component={EmployeePg}/>
+       <Stack.Screen name="Employee" component={EmployeePg2}/>
         <Stack.Screen name="Employeer1" component={Employeer}/>
         <Stack.Screen name="home1" component={home}/>
         <Stack.Screen name="user1" component={UserProfile}/>
@@ -454,7 +458,7 @@ const styles = StyleSheet.create({
    
   },
   button: {
-    top:790,
+    marginTop:'95%',
     width: 70, // Button width
     height: 70, // Button height
     backgroundColor: '#FFFF', // Button background color
@@ -464,7 +468,8 @@ const styles = StyleSheet.create({
     position: 'absolute', // Places the button relative to the background
     bottom: 50, // Adjust the button position from the bottom
     right: 30, // Adjust the button position from the right
-  },button2: {
+  },
+  button2: {
     backgroundColor: '#000000',
   },
   buttonImage: {
