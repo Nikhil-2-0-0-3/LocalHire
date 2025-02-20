@@ -3,9 +3,11 @@ import { View, ImageBackground, StyleSheet, TouchableOpacity, Image,
    Text ,TextInput , ScrollView,SafeAreaView,
    KeyboardAvoidingView,Alert} from 'react-native';
 
-import auth from "@react-native-firebase/auth"
+import auth from "@react-native-firebase/auth";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
+import DateTimePicker from '@react-native-community/datetimepicker';
+import RNPickerSelect from 'react-native-picker-select';
 
 
 
@@ -21,7 +23,13 @@ const EmployeePg2 = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [email1, setEmail1] = useState('');
   const [email, setEmail] = useState('');
-
+  const [dob ,setDob]=useState('');
+  const [location,setLocation]=useState('');
+  const[name,setName]=useState('');
+  const[phone,setPhone]=useState('');
+  const [date, setDate] = useState(new Date());
+  const [show, setShow] = useState(false);
+  const [gender, setGender] = useState('');
 
   // Function to handle SignUp and validate password match
   const handleSignUp = async () => {
@@ -41,17 +49,34 @@ const EmployeePg2 = ({ navigation }) => {
     
   };
 
-const handleLogin=()=>{
-  auth().signInWithEmailAndPassword(email,password).then(()=>{
-    navigation.navigate('home1')
-  })
-  .catch((error)=>{
-    console.log(error);
-    Alert.alert(error);
-  })
-}
+  const handleLogin = async () => {
+    try {
+      const userCredential = await auth().signInWithEmailAndPassword(email, password);
+      
+      // Get the user ID
+      const userId = userCredential.user.uid;
+  
+      // Save user ID to AsyncStorage
+      await AsyncStorage.setItem('userId', userId);
+  
+      // Navigate to home screen
+      navigation.navigate('home1');
+    } catch (error) {
+      console.log(error);
+      Alert.alert(error.message);
+    }
+  };
+
+
+  const onChange = (event, selectedDate) => {
+    setShow(false);
+    if (selectedDate) {
+      setDob(selectedDate);
+    }
+  };
 
   return (
+    
     <SafeAreaView style={{ flex: 1 }}>
       <KeyboardAvoidingView style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
@@ -115,19 +140,68 @@ const handleLogin=()=>{
                   <View style={styles.EmployeePgContainer}>
                     <View style={styles.unit}>
                       <Text>Name</Text>
-                      <TextInput placeholder="Name" placeholderTextColor="#808080" style={styles.unitInput} />
+                      <TextInput placeholder="Name" placeholderTextColor="#808080" style={styles.unitInput} onChangeText={setName} />
                     </View>
 
                     <View style={styles.unit}>
                       <Text>Phone</Text>
-                      <TextInput placeholder="Phone number" placeholderTextColor="#808080" style={styles.unitInput} keyboardType='numeric' />
+                      <TextInput placeholder="Phone number" onChangeText={setPhone} placeholderTextColor="#808080" style={styles.unitInput} keyboardType='numeric' />
                     </View>
+
+
+                    
+
+
+
 
                     <View style={styles.unit}>
                       <Text>Email</Text>
                       <TextInput placeholder="Email" placeholderTextColor="#808080" style={styles.unitInput} onChangeText={setEmail1}
                       keyboardType='email-address' />
                     </View>
+
+
+      <View style={styles.unit}>
+      <Text>DOB</Text>
+      <TextInput
+        placeholder="Select Date"
+        value={date.toLocaleDateString('en-GB')} // Display selected date
+        placeholderTextColor="#808080"
+        style={styles.unitInput}
+        onFocus={() => setShow(true)} // Show picker when focused
+      />
+      {show && (
+        <DateTimePicker
+          value={date}
+          mode="date"
+          display="spinner"
+          onChange={onChange}
+        />
+      )}
+    </View>
+
+    <View style={styles.unit}>
+      <Text>Gender</Text>
+      <RNPickerSelect
+        onValueChange={(value) => setGender(value)}
+        items={[
+          { label: 'Male', value: 'male' },
+          { label: 'Female', value: 'female' },
+          { label: 'Other', value: 'other' },
+        ]}
+        style={pickerSelectStyles}
+        placeholder={{ label: 'Select Gender', value: null }}
+      />
+    </View>
+
+    <View style={styles.unit}>
+          <Text>Location</Text>
+              <TextInput placeholder="Location" placeholderTextColor="#808080" style={styles.unitInput} onChangeText={setLocation} />
+    </View>
+
+
+
+                    
 
                     <View style={styles.unit}>
                       <Text>Password</Text>
@@ -318,9 +392,31 @@ const styles = StyleSheet.create({
       borderRadius: 14,
       marginLeft: 16,
     },
+    
    
    
   
+});
+
+const pickerSelectStyles = StyleSheet.create({
+  inputIOS: {
+    fontSize: 16,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: 'gray',
+    borderRadius: 5,
+    color: 'black',
+    marginTop: 5,
+  },
+  inputAndroid: {
+    fontSize: 16,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: 'gray',
+    borderRadius: 5,
+    color: 'black',
+    marginTop: 5,
+  },
 });
 
 export default EmployeePg2;
