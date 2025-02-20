@@ -5,6 +5,8 @@ import { createNativeStackNavigator, NativeStackScreenProps  } from '@react-navi
 import UserProfile from './userp.jsx';
 import EmployeePg2 from './employeePg2.tsx';
 import SearchBar from './components/SearchBar.tsx';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 
 // Define the ParamList for the Navigator
@@ -39,7 +41,12 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
         <ImageBackground source={backgroundImage} style={styles.imageBackground}>
           <TouchableOpacity
             style={styles.button}
-            onPress={() => navigation.navigate('Details')}
+            onPress={() => {
+              //navigation to home if the user has already logged in 
+              const userId=AsyncStorage.getItem('userId')
+              //userId==null?navigation.navigate('Details') : navigation.navigate('home1');
+              navigation.navigate('Details')
+            }}
           >
             <Image
               source={{ uri: 'https://i.postimg.cc/1zb41VXz/right-arrow.png' }}

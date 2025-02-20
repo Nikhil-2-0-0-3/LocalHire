@@ -1,19 +1,26 @@
 import React,{ useState } from 'react';
 import { View, ImageBackground, StyleSheet, TouchableOpacity, Image,
    Text ,TextInput , ScrollView,SafeAreaView,
-   KeyboardAvoidingView,Alert} from 'react-native';
+   KeyboardAvoidingView,Alert,PermissionsAndroid} from 'react-native';
 
 import auth from "@react-native-firebase/auth";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import DateTimePicker from '@react-native-community/datetimepicker';
-import RNPickerSelect from 'react-native-picker-select';
+import {Picker} from '@react-native-picker/picker';
 
 
+import messaging from '@react-native-firebase/messaging';
+
+//import { getDatabase, ref, set } from '@react-native-firebase/database';
+import { firebase } from '@react-native-firebase/database';
+
+PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
 
 
 
 const EmployeePg2 = ({ navigation }) => {
+
   const [selectedTab, setSelectedTab] = useState<'login' | 'signup'>('login');
   const [passwordVisible, setPasswordVisible] = useState(false); // For password visibility toggle
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false); // For confirm password visibility toggle
@@ -23,13 +30,13 @@ const EmployeePg2 = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [email1, setEmail1] = useState('');
   const [email, setEmail] = useState('');
-  const [dob ,setDob]=useState('');
+  const [dob ,setDob]=useState(new Date());
   const [location,setLocation]=useState('');
   const[name,setName]=useState('');
   const[phone,setPhone]=useState('');
-  const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
   const [gender, setGender] = useState('');
+  const [date,setDate]=useState()
 
   // Function to handle SignUp and validate password match
   const handleSignUp = async () => {
@@ -37,15 +44,52 @@ const EmployeePg2 = ({ navigation }) => {
       Alert.alert('Passwords do not match', 'Please ensure both passwords are the same.');
       return;
     }
+    try{
+      const UserCredential=await auth().createUserWithEmailAndPassword(email1,password1)
+      const user=UserCredential.user;
+      const fcmToken = await messaging().getToken();
+      //const database=getDatabase();
+
+      const userData = {
+        uid: user.uid,
+        name: name,
+        email: email1,
+        fcmToken: fcmToken,
+        phone:phone,
+        dob:dob,
+        location:location,
+        gender:gender,
+        password:password1,
+      };
+      console.log(userData);
+
+      //await database().ref(`users/${user.uid}`).set(userData);
+
+      //const userRef = ref(database, `users/${user.uid}`);
+      //await set(userRef, userData);
+
+      const reference = firebase
+     .app()
+     .database('https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/')
+     .ref(`users/${user.uid}`)
+     .set(userData)
+
+      console.log('user created sucessfully')
+      Alert.alert('user created sucessfully')
+    }catch(error){
+      console.log(error);
+    }
+
+
   
-  
+  /*
       console.log('enter')
       auth().createUserWithEmailAndPassword(email1,password1).then(()=>{
         Alert.alert("user created sucessfully");
       })
       .catch((error)=>{
         console.log(error);
-      })
+      })*/
     
   };
 
@@ -165,14 +209,14 @@ const EmployeePg2 = ({ navigation }) => {
       <Text>DOB</Text>
       <TextInput
         placeholder="Select Date"
-        value={date.toLocaleDateString('en-GB')} // Display selected date
+        value={dob.toLocaleDateString('en-GB')} // Display selected date
         placeholderTextColor="#808080"
         style={styles.unitInput}
         onFocus={() => setShow(true)} // Show picker when focused
       />
       {show && (
         <DateTimePicker
-          value={date}
+          value={dob}
           mode="date"
           display="spinner"
           onChange={onChange}
@@ -182,16 +226,15 @@ const EmployeePg2 = ({ navigation }) => {
 
     <View style={styles.unit}>
       <Text>Gender</Text>
-      <RNPickerSelect
-        onValueChange={(value) => setGender(value)}
-        items={[
-          { label: 'Male', value: 'male' },
-          { label: 'Female', value: 'female' },
-          { label: 'Other', value: 'other' },
-        ]}
-        style={pickerSelectStyles}
-        placeholder={{ label: 'Select Gender', value: null }}
-      />
+      <Picker
+      selectedValue={gender}
+      onValueChange={(itemValue, itemIndex) =>
+      setGender(itemValue)
+  }>
+  <Picker.Item label="Male" value="male" />
+  <Picker.Item label="Female" value="female" />
+  <Picker.Item label="Other" value="other" />
+</Picker>
     </View>
 
     <View style={styles.unit}>
