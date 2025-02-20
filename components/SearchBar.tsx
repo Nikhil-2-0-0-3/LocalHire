@@ -2,14 +2,69 @@
 //npm i @types/react-native-vector-icons
 //npm install --save-dev @types/react-native-vector-icons
 //npm i @react-native-voice/voice --save
+//npm i axios
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity,Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import Voice from '@react-native-voice/voice'
+import axios from 'axios';
+
 
 
 const SearchBar = () => {
+  const [prompt, setPrompt] = useState('');
+  const [response, setResponse] = useState('');
+  const [error, setError] = useState('');
+  const [searchText,setSearchText]=useState('');
+  const API_KEY = 'AIzaSyBpE4SoC4ostrQ8wL68-mYQc-5uhz10QQg';
+
+  const PerformNER = async (inputPrompt: string) => {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+
+
+    const data = {
+      contents: [{
+        parts: [{
+          text: inputPrompt,
+        }],
+      }],
+    };
+
+    try {
+      // Make the API request with a 10-second timeout
+      const response = await axios.post(url, data, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 10000, // Timeout after 10 seconds
+      });
+
+      console.log(response.data); // Log the entire response
+
+      // Set the response data
+      const responseText = response.data?.candidates[0]?.content?.parts[0]?.text || 'No content in response';
+      setResponse(responseText);
+      setError(''); // Clear any previous errors
+
+    } catch (error: any) {
+      // Handle errors
+      if (error.response) {
+        // Server responded with an error status
+        setError('Error');
+      } else if (error.request) {
+        // Request was made but no response received
+        setError('Network Error: No response received from the server');
+      } else {
+        // General error
+        setError('error');
+      }
+
+      setResponse('');
+    }
+  };
+
+
+
   const [recording, setRecording] = useState(false);
   const [dots, setDots] = useState('...');
 
@@ -32,25 +87,34 @@ const SearchBar = () => {
 
   return (
     <View style={styles.searchBar}>
-      <Icon name="search" size={20} color="#1294FF" />
+  {/* Search Icon */}
+  <TouchableOpacity onPress={async () => {
+    await PerformNER(searchText); // Call the PerformNER function
+    Alert.alert(response); 
+    // Alert the response
+  }}>
+    <Icon name="search" size={20} color="#1294FF" />
+  </TouchableOpacity>
 
-      {recording ? (
-        <Text style={styles.recordingText}>{dots}</Text>
-      ) : (
-        <TextInput
-          placeholder='Search Job here...'
-          placeholderTextColor={'#A3A3A3'}
-          style={styles.searchInput}
-        />
-      )}
-
-      <TouchableOpacity
-        onPressIn={() => setRecording(true)}
-        onPressOut={() => setRecording(false)}
-      >
-        <Icon name="microphone" size={20} color="#1294FF" />
-      </TouchableOpacity>
-    </View>
+  {recording ? (
+    <Text style={styles.recordingText}>{dots}</Text>
+  ) : (
+    <TextInput
+      placeholder="Search Job here..."
+      placeholderTextColor="#A3A3A3"
+      style={styles.searchInput}
+      onChangeText={(text)=>{setSearchText(text)}}
+      onSubmitEditing={async () => {
+        
+        await PerformNER('Text:{'+searchText+'} Task:Extarct named entities with the following tags location,job,min salary,min rating  output format:tag:entity include tags that are available ignore other tags');
+        console.log(response) // Call the PerformNER function
+        Alert.alert(response); // Alert the response
+        
+      }}
+      returnKeyType="search" // Changes the return key to say "Search" on iOS
+    />
+  )}
+</View>
   );
 };
 
