@@ -136,7 +136,7 @@ const styles=StyleSheet.create({
 
   },
   searchInput:{
-    width:'85%',
+    width:'90%',
     borderWidth:0,
     color:'black'
 

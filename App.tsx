@@ -6,6 +6,10 @@ import UserProfile from './userp.jsx';
 import EmployeePg2 from './employeePg2.tsx';
 import SearchBar from './components/SearchBar.tsx';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import TopEmployees from './components/TopEmployees.tsx';
+import AllUsers from './src/AllUsers.tsx';
+import Skill from './src/Skill.tsx';
+
 
 
 
@@ -18,6 +22,9 @@ type RootStackParamList = {
   home1:undefined;
   user1:undefined;
   EmployeePg2:undefined;
+  AllUser:undefined;
+  TopEmployee:undefined;
+  Skill:undefined;
 };
 
 // Define Props for HomeScreen
@@ -26,6 +33,9 @@ type EmpScreenProps = NativeStackScreenProps<RootStackParamList, 'Details'>;
 type pg3ScreenProps = NativeStackScreenProps<RootStackParamList, 'Employee'>;
 type pg4ScreenProps = NativeStackScreenProps<RootStackParamList, 'Employeer1'>;
 type home1ScreenProps = NativeStackScreenProps<RootStackParamList, 'home1'>;
+type AllUsersScreenProps=NativeStackScreenProps<RootStackParamList, 'AllUser'>;
+type TopEmployeesProps=NativeStackScreenProps<RootStackParamList, 'TopEmployee'>;
+
 
 
 // Local or Remote Image
@@ -290,6 +300,7 @@ const Employeer = ({ navigation }:pg4ScreenProps) => {
 //page 4
 const home = ({ navigation }:home1ScreenProps) => {
   return (
+    
     <ScrollView style={styles.container1}>
       {/* Header */}
       <View style={styles.header}>
@@ -305,49 +316,9 @@ const home = ({ navigation }:home1ScreenProps) => {
 
 
       {/* Top Rated Employees */}
-      <Text style={styles.sectionTitle}>Top Rated Employees</Text>
-      <View style={styles.card}>
-        {/* Employee Block */}
-        <View style={styles.employeeBlock}>
-          <View style={styles.employeeAvatar} />
-          <View style={styles.employeeDetails}>
-            <Text style={styles.employeeName}>Employee Name</Text>
-            <Text style={styles.employeeDescription}>Description</Text>
-            <Text style={styles.employeeCompany}>Company Name</Text>
-          </View>
-          <Text style={styles.ratingText}>⭐</Text>
-        </View>
-        <View style={styles.employeeBlock}>
-          <View style={styles.employeeAvatar} />
-          <View style={styles.employeeDetails}>
-            <Text style={styles.employeeName}>Employee Name</Text>
-            <Text style={styles.employeeDescription}>Description</Text>
-            <Text style={styles.employeeCompany}>Company Name</Text>
-          </View>
-          <Text style={styles.ratingText}>⭐</Text>
-        </View>
-        <View style={styles.employeeBlock}>
-          <View style={styles.employeeAvatar} />
-          <View style={styles.employeeDetails}>
-            <Text style={styles.employeeName}>Employee Name</Text>
-            <Text style={styles.employeeDescription}>Description</Text>
-            <Text style={styles.employeeCompany}>Company Name</Text>
-          </View>
-          <Text style={styles.ratingText}>⭐</Text>
-        </View>
-        <View style={styles.employeeBlock}>
-          <View style={styles.employeeAvatar} />
-          <View style={styles.employeeDetails}>
-            <Text style={styles.employeeName}>Employee Name</Text>
-            <Text style={styles.employeeDescription}>Description</Text>
-            <Text style={styles.employeeCompany}>Company Name</Text>
-          </View>
-          <Text style={styles.ratingText}>⭐</Text>
-        </View>
-        <TouchableOpacity style={styles.seeAllButton}>
-          <Text style={styles.seeAllText}>See all</Text>
-        </TouchableOpacity>
-      </View>
+      <TopEmployees/>
+
+
 
       {/* Job Listings */}
       {['Job 1', 'Job 2', 'Job 3'].map((job, index) => (
@@ -378,6 +349,7 @@ const home = ({ navigation }:home1ScreenProps) => {
         <View style={styles.placeholderIcon} />
       </View>
     </ScrollView>
+  
   );
 };
 
@@ -396,9 +368,16 @@ export default function App() {
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Details" component={DetailsScreen} />
        <Stack.Screen name="Employee" component={EmployeePg2}/>
+       <Stack.Screen name="Skill" component={Skill}/>
+
+       <Stack.Screen name="TopEmployee" component={TopEmployees} />
+
+       <Stack.Screen name="AllUser" component={AllUsers}/>
+
         <Stack.Screen name="Employeer1" component={Employeer}/>
         <Stack.Screen name="home1" component={home}/>
         <Stack.Screen name="user1" component={UserProfile}/>
+
         
        
 

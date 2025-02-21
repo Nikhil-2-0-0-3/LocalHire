@@ -74,8 +74,10 @@ const EmployeePg2 = ({ navigation }) => {
      .ref(`users/${user.uid}`)
      .set(userData)
 
-      console.log('user created sucessfully')
-      Alert.alert('user created sucessfully')
+     await AsyncStorage.setItem('userId', user.uid);
+
+     navigation.navigate('Skill');
+      
     }catch(error){
       console.log(error);
     }
