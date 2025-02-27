@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import TopEmployees from './components/TopEmployees.tsx';
 import AllUsers from './src/AllUsers.tsx';
 import Skill from './src/Skill.tsx';
-
+import JobDetails from './src/JobDetails.tsx';
 
 
 
@@ -25,6 +25,7 @@ type RootStackParamList = {
   AllUser:undefined;
   TopEmployee:undefined;
   Skill:undefined;
+  JobDetails:undefined;
 };
 
 // Define Props for HomeScreen
@@ -53,7 +54,7 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
             style={styles.button}
             onPress={() => {
               //navigation to home if the user has already logged in 
-              const userId=AsyncStorage.getItem('userId')
+              //const userId=AsyncStorage.getItem('userId')
               //userId==null?navigation.navigate('Details') : navigation.navigate('home1');
               navigation.navigate('Details')
             }}
@@ -371,6 +372,8 @@ export default function App() {
        <Stack.Screen name="Skill" component={Skill}/>
 
        <Stack.Screen name="TopEmployee" component={TopEmployees} />
+       <Stack.Screen name="JobDetails" component={JobDetails} />
+
 
        <Stack.Screen name="AllUser" component={AllUsers}/>
 

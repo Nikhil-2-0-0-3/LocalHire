@@ -1,130 +1,82 @@
-import React,{ useState } from 'react';
-import { View, ImageBackground, StyleSheet, TouchableOpacity, Image,
-   Text ,TextInput , ScrollView,SafeAreaView,
-   KeyboardAvoidingView,Alert,PermissionsAndroid} from 'react-native';
-
-import auth from "@react-native-firebase/auth";
+import React, { useState } from 'react';
+import {
+  View, StyleSheet, TouchableOpacity, Text, TextInput, ScrollView, SafeAreaView,
+  KeyboardAvoidingView, Alert, PermissionsAndroid,Image
+} from 'react-native';
+import { Formik } from 'formik';
+import auth from '@react-native-firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
 import DateTimePicker from '@react-native-community/datetimepicker';
-import {Picker} from '@react-native-picker/picker';
-
-
+import { Picker } from '@react-native-picker/picker';
 import messaging from '@react-native-firebase/messaging';
-
-//import { getDatabase, ref, set } from '@react-native-firebase/database';
 import { firebase } from '@react-native-firebase/database';
 
 PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
 
-
-
 const EmployeePg2 = ({ navigation }) => {
-
   const [selectedTab, setSelectedTab] = useState<'login' | 'signup'>('login');
-  const [passwordVisible, setPasswordVisible] = useState(false); // For password visibility toggle
-  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false); // For confirm password visibility toggle
-  const [password, setPassword] = useState('');
-  const [password1, setPassword1] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [email1, setEmail1] = useState('');
-  const [email, setEmail] = useState('');
-  const [dob ,setDob]=useState(new Date());
-  const [location,setLocation]=useState('');
-  const[name,setName]=useState('');
-  const[phone,setPhone]=useState('');
-  const [show, setShow] = useState(false);
-  const [gender, setGender] = useState('');
-  const [date,setDate]=useState()
+  // Handle SignUp with Formik
+  const handleSignUp = async (values) => {
+    const { email, password, confirmPassword, name, phone, dob, location, gender } = values;
 
-  // Function to handle SignUp and validate password match
-  const handleSignUp = async () => {
-    if (password1 !== confirmPassword) {
+    if (password !== confirmPassword) {
       Alert.alert('Passwords do not match', 'Please ensure both passwords are the same.');
       return;
     }
-    try{
-      const UserCredential=await auth().createUserWithEmailAndPassword(email1,password1)
-      const user=UserCredential.user;
+
+    try {
+      const userCredential = await auth().createUserWithEmailAndPassword(email, password);
+      const user = userCredential.user;
       const fcmToken = await messaging().getToken();
-      //const database=getDatabase();
 
       const userData = {
         uid: user.uid,
-        name: name,
-        email: email1,
-        fcmToken: fcmToken,
-        phone:phone,
-        dob:dob,
-        location:location,
-        gender:gender,
-        password:password1,
+        name,
+        email,
+        fcmToken,
+        phone,
+        dob: dob.toISOString(), // Convert date to string
+        location,
+        gender,
       };
-      console.log(userData);
 
-      //await database().ref(`users/${user.uid}`).set(userData);
+      // Save user data to Firebase Realtime Database
+      await firebase
+        .app()
+        .database('https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/')
+        .ref(`users/${user.uid}`)
+        .set(userData);
 
-      //const userRef = ref(database, `users/${user.uid}`);
-      //await set(userRef, userData);
-
-      const reference = firebase
-     .app()
-     .database('https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/')
-     .ref(`users/${user.uid}`)
-     .set(userData)
-
-     await AsyncStorage.setItem('userId', user.uid);
-
-     navigation.navigate('Skill');
-      
-    }catch(error){
-      console.log(error);
+      await AsyncStorage.setItem('userId', user.uid);
+      navigation.navigate('Skill');
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'Failed to create user. Please try again.');
     }
-
-
-  
-  /*
-      console.log('enter')
-      auth().createUserWithEmailAndPassword(email1,password1).then(()=>{
-        Alert.alert("user created sucessfully");
-      })
-      .catch((error)=>{
-        console.log(error);
-      })*/
-    
   };
 
-  const handleLogin = async () => {
+  // Handle Login with Formik
+  const handleLogin = async (values) => {
+    const { email, password } = values;
+
     try {
       const userCredential = await auth().signInWithEmailAndPassword(email, password);
-      
-      // Get the user ID
       const userId = userCredential.user.uid;
-  
-      // Save user ID to AsyncStorage
       await AsyncStorage.setItem('userId', userId);
-  
-      // Navigate to home screen
       navigation.navigate('home1');
     } catch (error) {
-      console.log(error);
-      Alert.alert(error.message);
-    }
-  };
-
-
-  const onChange = (event, selectedDate) => {
-    setShow(false);
-    if (selectedDate) {
-      setDob(selectedDate);
+      console.error(error);
+      Alert.alert('Error', 'Invalid email or password.');
     }
   };
 
   return (
-    
     <SafeAreaView style={{ flex: 1 }}>
-      <KeyboardAvoidingView style={{ flex: 1 }}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
           <View style={styles.one}>
             <View style={styles.car}>
@@ -132,154 +84,203 @@ const EmployeePg2 = ({ navigation }) => {
             </View>
             <View style={styles.bike1}>
               <TouchableOpacity
-                style={[styles.login, selectedTab == 'login' && styles.loginselec]}
+                style={[styles.login, selectedTab === 'login' && styles.loginselec]}
                 onPress={() => setSelectedTab('login')}
               >
                 <Text>Login</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.signup, selectedTab == 'signup' && styles.signupselec]}
+                style={[styles.signup, selectedTab === 'signup' && styles.signupselec]}
                 onPress={() => setSelectedTab('signup')}
               >
                 <Text>Signup</Text>
               </TouchableOpacity>
 
-
-
-              {//login
-              selectedTab === 'login' ? (
-                <View style={styles.signupv}>
-                <View style={styles.EmployeePgContainer}>
+              {selectedTab === 'login' ? (
+                <Formik
+                  initialValues={{ email: '', password: '' }}
                   
+                  onSubmit={handleLogin}
+                >
+                  {({ handleChange, handleBlur, handleSubmit, values }) => (
+                    <View style={styles.signupv}>
+                      <View style={styles.EmployeePgContainer}>
+                        <View style={styles.unit}>
+                          <Text>Email</Text>
+                          <TextInput
+                            placeholder="Email"
+                            placeholderTextColor="#808080"
+                            style={styles.unitInput}
+                            onChangeText={handleChange('email')}
+                            onBlur={handleBlur('email')}
+                            value={values.email}
+                            keyboardType="email-address"
+                          />
+                        </View>
 
-                  
-
-                  <View style={styles.unit}>
-                    <Text>Email</Text>
-                    <TextInput placeholder="Email" placeholderTextColor="#808080" style={styles.unitInput}
-                    onChangeText={setEmail} keyboardType='email-address'/>
-                  </View>
-
-
-                  <View style={styles.unit}>
-                    <Text>Password</Text>
-                    <TextInput
-                      placeholder="Password"
-                      placeholderTextColor="#808080"
-                      style={styles.unitInput}
-                      secureTextEntry={!passwordVisible}
-                      onChangeText={setPassword}
-                    />
-                    <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)}>
-                      <Text style={styles.showhide}>{passwordVisible ? 'Hide' : 'Show'}</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  
-                </View>
-                <TouchableOpacity style={styles.loginbtn} onPress={handleLogin}>
-                  <Text style={{ fontWeight: 'bold' }}>Log In</Text>
-                </TouchableOpacity>
-              </View>
+                        <View style={styles.unit}>
+                          <Text>Password</Text>
+                          <TextInput
+                            placeholder="Password"
+                            placeholderTextColor="#808080"
+                            style={styles.unitInput}
+                            secureTextEntry={!passwordVisible}
+                            onChangeText={handleChange('password')}
+                            onBlur={handleBlur('password')}
+                            value={values.password}
+                          />
+                          <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)}>
+                            <Text style={styles.showhide}>{passwordVisible ? 'Hide' : 'Show'}</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      <TouchableOpacity style={styles.loginbtn} onPress={handleSubmit}>
+                        <Text style={{ fontWeight: 'bold' }}>Log In</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </Formik>
               ) : (
-                <View style={styles.signupv}>
-                  <View style={styles.EmployeePgContainer}>
-                    <View style={styles.unit}>
-                      <Text>Name</Text>
-                      <TextInput placeholder="Name" placeholderTextColor="#808080" style={styles.unitInput} onChangeText={setName} />
-                    </View>
+                <Formik
+                  initialValues={{
+                    name: '',
+                    phone: '',
+                    email: '',
+                    dob: new Date(),
+                    gender: '',
+                    location: '',
+                    password: '',
+                    confirmPassword: '',
+                  }}
+                  onSubmit={handleSignUp}
+                >
+                  {({ handleChange, handleBlur, handleSubmit, setFieldValue, values }) => (
+                    <View style={styles.signupv}>
+                      <View style={styles.EmployeePgContainer}>
+                        <View style={styles.unit}>
+                          <Text>Name</Text>
+                          <TextInput
+                            placeholder="Name"
+                            placeholderTextColor="#808080"
+                            style={styles.unitInput}
+                            onChangeText={handleChange('name')}
+                            onBlur={handleBlur('name')}
+                            value={values.name}
+                          />
+                        </View>
 
-                    <View style={styles.unit}>
-                      <Text>Phone</Text>
-                      <TextInput placeholder="Phone number" onChangeText={setPhone} placeholderTextColor="#808080" style={styles.unitInput} keyboardType='numeric' />
-                    </View>
+                        <View style={styles.unit}>
+                          <Text>Phone</Text>
+                          <TextInput
+                            placeholder="Phone number"
+                            placeholderTextColor="#808080"
+                            style={styles.unitInput}
+                            onChangeText={handleChange('phone')}
+                            onBlur={handleBlur('phone')}
+                            value={values.phone}
+                            keyboardType="numeric"
+                          />
+                        </View>
 
+                        <View style={styles.unit}>
+                          <Text>Email</Text>
+                          <TextInput
+                            placeholder="Email"
+                            placeholderTextColor="#808080"
+                            style={styles.unitInput}
+                            onChangeText={handleChange('email')}
+                            onBlur={handleBlur('email')}
+                            value={values.email}
+                            keyboardType="email-address"
+                          />
+                        </View>
 
-                    
+                        <View style={styles.unit}>
+                          <Text>DOB</Text>
+                          <TextInput
+                            placeholder="Select Date"
+                            value={values.dob ? values.dob.toLocaleDateString('en-GB') : ""}
+                            placeholderTextColor="#808080"
+                            style={styles.unitInput}
+                            onFocus={() => setShowDatePicker(true)}
+                          />
+                          {showDatePicker && (
+                            <DateTimePicker
+                              value={values.dob || new Date()}
+                              mode="date"
+                              display="spinner"
+                              onChange={(event, selectedDate) => {
+                                setShowDatePicker(false);
+                                if (selectedDate) {
+                                  setFieldValue('dob', selectedDate);
+                                }
+                              }}
+                            />
+                          )}
+                        </View>
 
+                        <View style={styles.unit}>
+                          <Text>Gender</Text>
+                          <Picker
+                            selectedValue={values.gender}
+                            onValueChange={(itemValue) => setFieldValue('gender', itemValue)}
+                          >
+                            <Picker.Item label="Male" value="male" />
+                            <Picker.Item label="Female" value="female" />
+                            <Picker.Item label="Other" value="other" />
+                          </Picker>
+                        </View>
 
+                        <View style={styles.unit}>
+                          <Text>Location</Text>
+                          <TextInput
+                            placeholder="Location"
+                            placeholderTextColor="#808080"
+                            style={styles.unitInput}
+                            onChangeText={handleChange('location')}
+                            onBlur={handleBlur('location')}
+                            value={values.location}
+                          />
+                        </View>
 
+                        <View style={styles.unit}>
+                          <Text>Password</Text>
+                          <TextInput
+                            placeholder="Password"
+                            placeholderTextColor="#808080"
+                            style={styles.unitInput}
+                            secureTextEntry={!passwordVisible}
+                            onChangeText={handleChange('password')}
+                            onBlur={handleBlur('password')}
+                            value={values.password}
+                          />
+                          <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)}>
+                            <Text style={styles.showhide}>{passwordVisible ? 'Hide' : 'Show'}</Text>
+                          </TouchableOpacity>
+                        </View>
 
-                    <View style={styles.unit}>
-                      <Text>Email</Text>
-                      <TextInput placeholder="Email" placeholderTextColor="#808080" style={styles.unitInput} onChangeText={setEmail1}
-                      keyboardType='email-address' />
-                    </View>
-
-
-      <View style={styles.unit}>
-      <Text>DOB</Text>
-      <TextInput
-        placeholder="Select Date"
-        value={dob.toLocaleDateString('en-GB')} // Display selected date
-        placeholderTextColor="#808080"
-        style={styles.unitInput}
-        onFocus={() => setShow(true)} // Show picker when focused
-      />
-      {show && (
-        <DateTimePicker
-          value={dob}
-          mode="date"
-          display="spinner"
-          onChange={onChange}
-        />
-      )}
-    </View>
-
-    <View style={styles.unit}>
-      <Text>Gender</Text>
-      <Picker
-      selectedValue={gender}
-      onValueChange={(itemValue, itemIndex) =>
-      setGender(itemValue)
-  }>
-  <Picker.Item label="Male" value="male" />
-  <Picker.Item label="Female" value="female" />
-  <Picker.Item label="Other" value="other" />
-</Picker>
-    </View>
-
-    <View style={styles.unit}>
-          <Text>Location</Text>
-              <TextInput placeholder="Location" placeholderTextColor="#808080" style={styles.unitInput} onChangeText={setLocation} />
-    </View>
-
-
-
-                    
-
-                    <View style={styles.unit}>
-                      <Text>Password</Text>
-                      <TextInput
-                        placeholder="Password"
-                        placeholderTextColor="#808080"
-                        style={styles.unitInput}
-                        secureTextEntry={!passwordVisible}
-                        onChangeText={setPassword1}
-                      />
-                      <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)}>
-                        <Text style={styles.showhide}>{passwordVisible ? 'Hide' : 'Show'}</Text>
+                        <View style={styles.unit}>
+                          <Text>Confirm Password</Text>
+                          <TextInput
+                            placeholder="Confirm password"
+                            placeholderTextColor="#808080"
+                            style={styles.unitInput}
+                            secureTextEntry={!confirmPasswordVisible}
+                            onChangeText={handleChange('confirmPassword')}
+                            onBlur={handleBlur('confirmPassword')}
+                            value={values.confirmPassword}
+                          />
+                          <TouchableOpacity onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}>
+                            <Text style={styles.showhide}>{confirmPasswordVisible ? 'Hide' : 'Show'}</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      <TouchableOpacity style={styles.loginbtn} onPress={handleSubmit}>
+                        <Text style={{ fontWeight: 'bold' }}>Sign Up</Text>
                       </TouchableOpacity>
                     </View>
-
-                    <View style={styles.unit}>
-                      <Text>Confirm Password</Text>
-                      <TextInput
-                        placeholder="Confirm password"
-                        placeholderTextColor="#808080"
-                        style={styles.unitInput}
-                        secureTextEntry={!confirmPasswordVisible}
-                        onChangeText={setConfirmPassword}
-                      />
-                      <TouchableOpacity onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}>
-                        <Text style={styles.showhide}>{confirmPasswordVisible ? 'Hide' : 'Show'}</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                  <TouchableOpacity style={styles.loginbtn} onPress={handleSignUp}>
-                    <Text style={{ fontWeight: 'bold' }}>Sign Up</Text>
-                  </TouchableOpacity>
-                </View>
+                  )}
+                </Formik>
               )}
             </View>
           </View>
@@ -288,7 +289,6 @@ const EmployeePg2 = ({ navigation }) => {
     </SafeAreaView>
   );
 };
-
 
 const styles = StyleSheet.create({
   //styles by nikhil
@@ -463,5 +463,6 @@ const pickerSelectStyles = StyleSheet.create({
     marginTop: 5,
   },
 });
+
 
 export default EmployeePg2;

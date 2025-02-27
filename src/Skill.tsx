@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
 import { firebase } from '@react-native-firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from "@react-navigation/native";
 const SaveToDb = async (skills: string[]) => {
+
     console.log(skills)
     const userData = {
         skills:skills
@@ -15,11 +17,14 @@ const SaveToDb = async (skills: string[]) => {
         return;
     }
 
-    db.ref(`users/${uid}`).set(userData)
-        .then(() => console.log("Skills saved successfully"))
+    db.ref(`users/${uid}`).update(userData)
+        .then(() => {console.log("Skills saved successfully"
+        )})
         .catch((error) => console.error("Error saving skills:", error));
 };
 const Skill = () => {
+const navigation = useNavigation();
+  
   const [jobType, setJobType] = useState('');
   const [selectedJobs, setSelectedJobs] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
@@ -104,6 +109,7 @@ const Skill = () => {
         </View>
         <TouchableOpacity style={styles.saveButton} onPress={()=>{
             SaveToDb(selectedJobs)
+            .then(()=>{navigation.navigate('home1')})
         }}>
           <Text style={styles.saveButtonText}>Save</Text>
         </TouchableOpacity>
