@@ -8,10 +8,8 @@ import { Formik } from 'formik';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { firebase } from '@react-native-firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { v4 as uuidv4 } from 'uuid'; // Import UUID package
-
 import messaging from '@react-native-firebase/messaging';
-
+import uuid from 'react-native-uuid';
 
 interface FormValues {
   job_id:string;
@@ -22,15 +20,10 @@ interface FormValues {
 }
 
 
-
-// Function to send a notification
-// Function to send a notification
-
-
 const generateJobId = async () => {
   const uid = await AsyncStorage.getItem('userId'); // Get the user's UID
   const timestamp = Date.now(); // Get current timestamp
-  const randomString = uuidv4().split('-')[0]; // Generate a short unique string
+  const randomString = uuid.v4().split('-')[0]; // Generate a short unique string
   return `${uid}_${timestamp}_${randomString}`; // Concatenated unique job ID
 };
 
@@ -43,7 +36,7 @@ const formatDate = (date: Date): string => {
 //save to database
 const SaveToDb = async (values) => {
   try {
-    const receiverUid=await AsyncStorage.getItem('reciver_id')
+    const receiverUid=await AsyncStorage.getItem('receiver_id')
     const uid = await AsyncStorage.getItem('userId');
     if (!uid) {
       console.error("User ID not found");
@@ -67,22 +60,26 @@ const SaveToDb = async (values) => {
     await db.ref(`Jobs/${jobId}`).set(userData);
 
     // Save job ID in sender's JobsPosted node
-    await db.ref(`Users/${uid}/JobsPosted/${jobId}`).set(true);
+    await db.ref(`users/${uid}/JobsPosted/${jobId}`).set(true);
 
     // Save notification in receiver's notifications node
-    await db.ref(`Users/${receiverUid}/notifications/${jobId}`).set({
+    await db.ref(`users/${receiverUid}/notifications/${jobId}`).set({
       ...userData,
       accepted: true, // Initially set to true
     });
 
     // Fetch the receiver's FCM token
-    const receiverRef = db.ref(`Users/${receiverUid}/fcmToken`);
+    console.log(receiverUid)
+    const receiverRef = db.ref(`users/${receiverUid}/fcmToken`);
     const receiverSnapshot = await receiverRef.once('value');
     const receiverFcmToken = receiverSnapshot.val();
 
     if (receiverFcmToken) {
       // Send notification to the receiver
+      const receiverFcmToken = receiverSnapshot.val();
+      console.log(receiverFcmToken)
       await sendNotification(receiverFcmToken, userData);
+      Alert.alert('Notification send')
     } else {
       console.error("Receiver FCM token not found");
     }

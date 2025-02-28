@@ -1,7 +1,8 @@
-import React,{ useState } from 'react';
+import React,{ useState ,useEffect} from 'react';
 import { View, ImageBackground, StyleSheet, TouchableOpacity, Image, Text ,TextInput , ScrollView,SafeAreaView,KeyboardAvoidingView,Alert} from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackScreenProps  } from '@react-navigation/native-stack';
+import messaging from '@react-native-firebase/messaging';
 import UserProfile from './userp.jsx';
 import EmployeePg2 from './employeePg2.tsx';
 import SearchBar from './components/SearchBar.tsx';
@@ -11,7 +12,17 @@ import AllUsers from './src/AllUsers.tsx';
 import Skill from './src/Skill.tsx';
 import JobDetails from './src/JobDetails.tsx';
 
+// Request notification permissions
+const requestUserPermission = async () => {
+  const authStatus = await messaging().requestPermission();
+  const enabled =
+    authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+    authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
+  if (enabled) {
+    console.log('Authorization status:', authStatus);
+  }
+};
 
 // Define the ParamList for the Navigator
 type RootStackParamList = {
@@ -359,6 +370,42 @@ const home = ({ navigation }:home1ScreenProps) => {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
+  useEffect(() => {
+    // Request notification permissions
+    requestUserPermission();
+
+
+    // Handle foreground messages
+    const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
+      const notificationTitle = remoteMessage.notification?.title || 'New Notification';
+      const notificationBody = remoteMessage.notification?.body || 'You have a new message';
+
+      Alert.alert(notificationTitle, notificationBody);
+    });
+
+    // Handle background messages
+    messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+      console.log('Message handled in the background!', remoteMessage);
+    });
+
+    // Handle notification opened from quit state
+    messaging()
+      .getInitialNotification()
+      .then((remoteMessage) => {
+        if (remoteMessage) {
+          console.log('Notification caused app to open from quit state:', remoteMessage);
+          // Navigate to a specific screen based on the notification
+        }
+      });
+
+    // Cleanup function
+    return () => {
+      if (unsubscribeForeground) {
+        unsubscribeForeground(); // Unsubscribe the foreground listener
+      }
+    };
+  }, []);
+
   return (
     <NavigationContainer>
       <Stack.Navigator
@@ -368,22 +415,14 @@ export default function App() {
       >
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Details" component={DetailsScreen} />
-       <Stack.Screen name="Employee" component={EmployeePg2}/>
-       <Stack.Screen name="Skill" component={Skill}/>
-
-       <Stack.Screen name="TopEmployee" component={TopEmployees} />
-       <Stack.Screen name="JobDetails" component={JobDetails} />
-
-
-       <Stack.Screen name="AllUser" component={AllUsers}/>
-
-        <Stack.Screen name="Employeer1" component={Employeer}/>
-        <Stack.Screen name="home1" component={home}/>
-        <Stack.Screen name="user1" component={UserProfile}/>
-
-        
-       
-
+        <Stack.Screen name="Employee" component={EmployeePg2} />
+        <Stack.Screen name="Skill" component={Skill} />
+        <Stack.Screen name="TopEmployee" component={TopEmployees} />
+        <Stack.Screen name="JobDetails" component={JobDetails} />
+        <Stack.Screen name="AllUser" component={AllUsers} />
+        <Stack.Screen name="Employeer1" component={Employeer} />
+        <Stack.Screen name="home1" component={home} />
+        <Stack.Screen name="user1" component={UserProfile} />
       </Stack.Navigator>
     </NavigationContainer>
   );
