@@ -48,11 +48,9 @@ const SearchBar = () => {
       setError(''); // Clear any previous errors
 
       // Validate the response format
-      if (isValidResponseFormat(responseText)) {
+      
         Alert.alert('Extracted Entities', responseText);
-      } else {
-        Alert.alert('Server Error', 'The response is not in the required format (tag:word).');
-      }
+      
     } catch (error: any) {
       // Handle errors
       if (error.response) {

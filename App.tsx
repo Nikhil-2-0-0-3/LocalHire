@@ -10,7 +10,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import TopEmployees from './components/TopEmployees.tsx';
 import AllUsers from './src/AllUsers.tsx';
 import Skill from './src/Skill.tsx';
+import NavBar from './components/NavBar.tsx';
 import JobDetails from './src/JobDetails.tsx';
+import NotificationsScreen from './src/Notification.tsx';
 
 // Request notification permissions
 const requestUserPermission = async () => {
@@ -37,6 +39,8 @@ type RootStackParamList = {
   TopEmployee:undefined;
   Skill:undefined;
   JobDetails:undefined;
+  NavBar:undefined;
+  Notification:undefined;
 };
 
 // Define Props for HomeScreen
@@ -65,8 +69,8 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
             style={styles.button}
             onPress={() => {
               //navigation to home if the user has already logged in 
-              //const userId=AsyncStorage.getItem('userId')
-              //userId==null?navigation.navigate('Details') : navigation.navigate('home1');
+              const userId=AsyncStorage.getItem('userId')
+              userId==null?navigation.navigate('Details') : navigation.navigate('home1');
               navigation.navigate('Details')
             }}
           >
@@ -314,12 +318,11 @@ const home = ({ navigation }:home1ScreenProps) => {
   return (
     
     <ScrollView style={styles.container1}>
+      
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={()=>{navigation.navigate('user1')}}>
-          <Text>Profile</Text>
-        </TouchableOpacity>
-      </View>
+       
+      <NavBar/>
+      
 
       {/* Search Bar */}
       
@@ -417,6 +420,10 @@ export default function App() {
         <Stack.Screen name="Details" component={DetailsScreen} />
         <Stack.Screen name="Employee" component={EmployeePg2} />
         <Stack.Screen name="Skill" component={Skill} />
+        <Stack.Screen name="NavBar" component={NavBar} />
+        <Stack.Screen name="Notification" component={NotificationsScreen} />
+        
+
         <Stack.Screen name="TopEmployee" component={TopEmployees} />
         <Stack.Screen name="JobDetails" component={JobDetails} />
         <Stack.Screen name="AllUser" component={AllUsers} />

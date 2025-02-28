@@ -66,6 +66,8 @@ const SaveToDb = async (values) => {
     await db.ref(`users/${receiverUid}/notifications/${jobId}`).set({
       ...userData,
       accepted: true, // Initially set to true
+      btnActive:true,
+      type:'A',
     });
 
     // Fetch the receiver's FCM token

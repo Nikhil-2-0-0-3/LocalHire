@@ -27,7 +27,7 @@ const AllUsers = () => {
     try {
       if (id) {
         await AsyncStorage.setItem("receiver_id", id);
-        console.log("FCM Token saved:", id);
+        console.log("reciever_id:", id);
       } else {
         console.warn("No id available");
       }
