@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, SafeAreaView } from "react-native";
 import { firebase } from "@react-native-firebase/database";
 import Icon2 from "react-native-vector-icons/EvilIcons";
 import Icon from "react-native-vector-icons/FontAwesome";
-
+import NavBar from "../components/NavBar";
 import SearchBar from "../components/SearchBar";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Loading from "../components/Loading"; // Import the Loading component
 
 // Define TypeScript type for users
 type User = {
@@ -16,11 +16,11 @@ type User = {
   location: string;
   job: string;
   rating: number;
-  
 };
 
 const AllUsers = () => {
   const [users, setUsers] = useState<User[]>([]); // Store all users
+  const [loading, setLoading] = useState(true); // Loading state
   const navigation = useNavigation();
 
   const handleHire = async (id: string) => {
@@ -39,12 +39,13 @@ const AllUsers = () => {
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const reference = firebase
-        .app()
-        .database("https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/")
-        .ref("users");
+      try {
+        const reference = firebase
+          .app()
+          .database("https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/")
+          .ref("users");
 
-      reference.once("value").then((snapshot) => {
+        const snapshot = await reference.once("value");
         if (snapshot.exists()) {
           const userData = snapshot.val();
           const userList: User[] = Object.keys(userData).map((key) => ({
@@ -57,20 +58,29 @@ const AllUsers = () => {
 
           setUsers(userList); // Set all users without filtering
         }
-      });
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      } finally {
+        setLoading(false); // Stop loading after fetching data
+      }
     };
 
     fetchUsers();
   }, []);
 
+  if (loading) {
+    return <Loading />; // Use the Loading component
+  }
+
   return (
     <SafeAreaView style={styles.container1}>
+      <NavBar />
+      <View style={{ height: 45 }}>
+        <SearchBar />
+      </View>
       <View style={styles.container}>
-        <View style={{height:50}}>
-          <SearchBar />
-        </View>
         <FlatList
-          style={{marginTop:'10%'}}  
+          style={{ marginTop: '10%' }}
           data={users}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
@@ -96,10 +106,10 @@ const AllUsers = () => {
               </View>
               <View style={styles.btnContainer}>
                 <TouchableOpacity style={styles.btn}>
-                  <Text style={{color:'white'}}>Profile</Text>
+                  <Text style={{ color: 'white' }}>Profile</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.btn} onPress={()=>{handleHire(item.id)}}>
-                  <Text style={{color:'white'}}>Hire</Text>
+                <TouchableOpacity style={styles.btn} onPress={() => { handleHire(item.id) }}>
+                  <Text style={{ color: 'white' }}>Hire</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -111,27 +121,25 @@ const AllUsers = () => {
 };
 
 const styles = StyleSheet.create({
-  btnContainer:{
-    flex:1,
-    flexDirection:'row',
-    height:40,
+  btnContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    height: 40,
   },
-  btn:{
-    width:'20%',
-    height:25,
-    alignItems:'center',
-    justifyContent:'center',
-    backgroundColor:'#1294FF',
-    borderWidth:0,
-    borderColor:'#000000',
-    borderRadius:25,
-    margin:'auto'
-     
-   },
+  btn: {
+    width: '20%',
+    height: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1294FF',
+    borderWidth: 0,
+    borderColor: '#000000',
+    borderRadius: 25,
+    margin: 'auto'
+  },
   container1: {
     flex: 1,
     backgroundColor: "#fff",
-    marginTop:10,
   },
   container: {
     flex: 1,
@@ -146,8 +154,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     backgroundColor: "#f8f8f8",
     elevation: 5,
-
-
   },
   card: {
     flexDirection: "row",
@@ -181,6 +187,5 @@ const styles = StyleSheet.create({
     flexShrink: 1, // Allows text to wrap properly
   },
 });
-
 
 export default AllUsers;

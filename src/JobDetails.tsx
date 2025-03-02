@@ -1,6 +1,6 @@
-import { 
-  StyleSheet, Text, View, KeyboardAvoidingView, ScrollView, Alert, TextInput, 
-  TouchableOpacity, Platform 
+import {
+  StyleSheet, Text, View, KeyboardAvoidingView, ScrollView, Alert, TextInput,
+  TouchableOpacity, Platform
 } from 'react-native';
 import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,13 +12,12 @@ import messaging from '@react-native-firebase/messaging';
 import uuid from 'react-native-uuid';
 
 interface FormValues {
-  job_id:string;
+  job_id: string;
   job_type: string;
   location: string;
   date: Date | null;
   salary_range: number; // Salary is a number
 }
-
 
 const generateJobId = async () => {
   const uid = await AsyncStorage.getItem('userId'); // Get the user's UID
@@ -29,14 +28,16 @@ const generateJobId = async () => {
 
 // Function to format date as "dd/mm/yyyy"
 const formatDate = (date: Date): string => {
-  return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
 };
 
-
-//save to database
+// Save to database
 const SaveToDb = async (values) => {
   try {
-    const receiverUid=await AsyncStorage.getItem('receiver_id')
+    const receiverUid = await AsyncStorage.getItem('receiver_id');
     const uid = await AsyncStorage.getItem('userId');
     if (!uid) {
       console.error("User ID not found");
@@ -44,11 +45,15 @@ const SaveToDb = async (values) => {
     }
 
     const jobId = await generateJobId();
+
+    // Convert the Date object to a string
+    const formattedDate = values.date ? formatDate(values.date) : null;
+
     const userData = {
       job_id: jobId,
       job_type: values.job_type,
       location: values.location,
-      date: values.date,
+      date: formattedDate, // Store the date as a string
       salary_range: values.salary_range,
       completed: false,
       senderUid: uid, // Include sender's UID
@@ -66,22 +71,20 @@ const SaveToDb = async (values) => {
     await db.ref(`users/${receiverUid}/notifications/${jobId}`).set({
       ...userData,
       accepted: true, // Initially set to true
-      btnActive:true,
-      type:'A',
+      btnActive: true,
+      type: 'A',
     });
 
     // Fetch the receiver's FCM token
-    console.log(receiverUid)
+    console.log(receiverUid);
     const receiverRef = db.ref(`users/${receiverUid}/fcmToken`);
     const receiverSnapshot = await receiverRef.once('value');
     const receiverFcmToken = receiverSnapshot.val();
 
     if (receiverFcmToken) {
       // Send notification to the receiver
-      const receiverFcmToken = receiverSnapshot.val();
-      console.log(receiverFcmToken)
       await sendNotification(receiverFcmToken, userData);
-      Alert.alert('Notification send')
+      Alert.alert('Notification sent');
     } else {
       console.error("Receiver FCM token not found");
     }
@@ -90,9 +93,8 @@ const SaveToDb = async (values) => {
   }
 };
 
-
 // Function to send a notification
-const sendNotification = async (receiverFcmToken:string, jobDetails) => {
+const sendNotification = async (receiverFcmToken: string, jobDetails) => {
   const message = {
     token: receiverFcmToken,
     notification: {
@@ -111,14 +113,12 @@ const sendNotification = async (receiverFcmToken:string, jobDetails) => {
   };
 
   try {
-    
     await messaging().sendMessage(message);
     console.log('Notification sent successfully:');
   } catch (error) {
     console.error('Error sending notification:', error);
   }
 };
-
 
 export default function JobDetails() {
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -129,7 +129,7 @@ export default function JobDetails() {
         <ScrollView contentContainerStyle={styles.scrollViewContent}>
           <View style={styles.container}>
             <Formik<FormValues>
-              initialValues={{ location: '', job_type: '', date: null, salary_range: 0 ,job_id:''}}
+              initialValues={{ location: '', job_type: '', date: null, salary_range: 0, job_id: '' }}
               validate={(values) => {
                 const errors: Partial<Record<keyof FormValues, string>> = {};
 

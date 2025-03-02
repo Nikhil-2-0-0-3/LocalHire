@@ -13,6 +13,9 @@ import Skill from './src/Skill.tsx';
 import NavBar from './components/NavBar.tsx';
 import JobDetails from './src/JobDetails.tsx';
 import NotificationsScreen from './src/Notification.tsx';
+import JobDetails2 from './src/JobDetails2.tsx';
+import JobBtns from './components/JobBtns.tsx';
+import Loading from './components/Loading.tsx';
 
 // Request notification permissions
 const requestUserPermission = async () => {
@@ -41,6 +44,8 @@ type RootStackParamList = {
   JobDetails:undefined;
   NavBar:undefined;
   Notification:undefined;
+  JobDetails2:undefined;
+  JobBtns:undefined;
 };
 
 // Define Props for HomeScreen
@@ -314,47 +319,36 @@ const Employeer = ({ navigation }:pg4ScreenProps) => {
   );
 };
 //page 4
-const home = ({ navigation }:home1ScreenProps) => {
+const home = ({ navigation }: home1ScreenProps) => {
+  const [loading, setLoading] = useState(true); // Add a loading state
+
+  // Simulate a loading delay (e.g., fetching data or preparing the screen)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false); // Stop loading after 2 seconds
+    }, 2000);
+
+    return () => clearTimeout(timer); // Cleanup the timer
+  }, []);
+
+  // Display the Loading component while loading
+  if (loading) {
+    return <Loading />;
+  }
+
   return (
-    
     <ScrollView style={styles.container1}>
-      
       {/* Header */}
-       
-      <NavBar/>
-      
+      <NavBar />
 
       {/* Search Bar */}
-      
-      <SearchBar/>
-
-
+      <SearchBar />
 
       {/* Top Rated Employees */}
-      <TopEmployees/>
-
-
+      <TopEmployees />
 
       {/* Job Listings */}
-      {['Job 1', 'Job 2', 'Job 3'].map((job, index) => (
-        <View key={index} style={styles.jobCard}>
-          <View style={styles.jobHeader}>
-            <View style={styles.jobAvatar} />
-            <View style={styles.jobDetails}>
-              <Text style={styles.jobTitle}>Job Title</Text>
-              <Text style={styles.companyName}>Company Name</Text>
-              <View style={styles.tagContainer}>
-                <Text style={styles.tag}>Fulltime</Text>
-                <Text style={styles.tag}>Medium Level</Text>
-                <Text style={styles.tag}>Remote</Text>
-              </View>
-            </View>
-            <View style={styles.placeholderIcon} />
-          </View>
-          <Text style={styles.jobLocation}>Location, State</Text>
-          <Text style={styles.jobTime}>X hours ago</Text>
-        </View>
-      ))}
+      <JobBtns />
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNavigation}>
@@ -364,7 +358,6 @@ const home = ({ navigation }:home1ScreenProps) => {
         <View style={styles.placeholderIcon} />
       </View>
     </ScrollView>
-  
   );
 };
 
@@ -422,6 +415,8 @@ export default function App() {
         <Stack.Screen name="Skill" component={Skill} />
         <Stack.Screen name="NavBar" component={NavBar} />
         <Stack.Screen name="Notification" component={NotificationsScreen} />
+        <Stack.Screen name="JobDetails2" component={JobDetails2} />
+        <Stack.Screen name="JobBtns" component={JobBtns} />
         
 
         <Stack.Screen name="TopEmployee" component={TopEmployees} />

@@ -1,10 +1,9 @@
-import { StyleSheet, Text, View,TouchableOpacity } from 'react-native'
-import React, { useState, useEffect } from 'react'
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { firebase } from "@react-native-firebase/database";
+import { firebase } from '@react-native-firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from "@react-navigation/native";
-
+import { useNavigation } from '@react-navigation/native';
 
 const checkNotification = async () => {
     const uid = await AsyncStorage.getItem('userId');
@@ -12,7 +11,7 @@ const checkNotification = async () => {
 
     const reference = firebase
         .app()
-        .database("https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/")
+        .database('https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/')
         .ref(`users/${uid}/notifications/`);
 
     const snapshot = await reference.once('value');
@@ -45,25 +44,41 @@ export default function NavBar() {
 
     return (
         <View style={styles.container}>
-            <TouchableOpacity>
-            <Icon name={hasNotification ?  'bell' : 'bell-slash'} 
-            size={20} color="#1294FF"  onPress={()=>{navigation.navigate('Notification')}}/>
-            </TouchableOpacity>
-            <TouchableOpacity>
-            <Icon name="user-o" size={20} color="#1294FF" onPress={()=>{navigation.navigate('user1')}}/>
-            </TouchableOpacity>
-            
-            
+            {/* LocalHire Text on the far left */}
+            <Text style={styles.title}>LocalHire</Text>
+
+            {/* Icons on the far right with a gap */}
+            <View style={styles.iconsContainer}>
+                <TouchableOpacity onPress={() => navigation.navigate('Notification')}>
+                    <Icon
+                        name={hasNotification ? 'bell' : 'bell-slash'}
+                        size={20}
+                        color="#1294FF"
+                    />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.navigate('user1')}>
+                    <Icon name="user-o" size={20} color="#1294FF" />
+                </TouchableOpacity>
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        justifyContent:"flex-end",
         flexDirection: 'row',
-        gap:'10%',
-        marginVertical:20,
-        marginHorizontal:10,
+        justifyContent: 'space-between', // Space between title and icons
+        alignItems: 'center', // Vertically center items
+        marginVertical: 20,
+        marginHorizontal: 10,
+    },
+    title: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#FFA500', // Optional: Add color to the title
+    },
+    iconsContainer: {
+        flexDirection: 'row',
+        gap: 20, // Gap between the two icons
     },
 });
