@@ -16,7 +16,13 @@ import NotificationsScreen from './src/Notification.tsx';
 import JobDetails2 from './src/JobDetails2.tsx';
 import JobBtns from './components/JobBtns.tsx';
 import Loading from './components/Loading.tsx';
-
+import Welcome from './src/Welcome.tsx';
+import Reviews from './src/Review.tsx';
+import JobList from './src/JobList.tsx';
+import JobCard from './components/JobCard.tsx';
+import ViewJobDetails from './src/VIewJobDetails.tsx';
+import FilterScreen from './src/FilterScreen.tsx';
+import FilteredJobs from './components/FilteredJobs.tsx';
 // Request notification permissions
 const requestUserPermission = async () => {
   const authStatus = await messaging().requestPermission();
@@ -46,6 +52,13 @@ type RootStackParamList = {
   Notification:undefined;
   JobDetails2:undefined;
   JobBtns:undefined;
+  Welcome:undefined;
+  Reviews:undefined;
+  JobList:undefined;
+  JobCard:undefined;
+  ViewJobDetails:undefined;
+  FilterScreen:undefined;
+  FilteredJobs:undefined;
 };
 
 // Define Props for HomeScreen
@@ -346,17 +359,12 @@ const home = ({ navigation }: home1ScreenProps) => {
 
       {/* Top Rated Employees */}
       <TopEmployees />
+      <FilteredJobs/>
 
       {/* Job Listings */}
       <JobBtns />
 
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNavigation}>
-        <View style={styles.placeholderIcon} />
-        <View style={styles.placeholderIcon} />
-        <View style={styles.placeholderIcon} />
-        <View style={styles.placeholderIcon} />
-      </View>
+      
     </ScrollView>
   );
 };
@@ -409,6 +417,8 @@ export default function App() {
           headerShown: false, // Disables the header for all screens
         }}
       >
+        {
+        <Stack.Screen name='Welcome' component={Welcome}/>}
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Details" component={DetailsScreen} />
         <Stack.Screen name="Employee" component={EmployeePg2} />
@@ -417,11 +427,19 @@ export default function App() {
         <Stack.Screen name="Notification" component={NotificationsScreen} />
         <Stack.Screen name="JobDetails2" component={JobDetails2} />
         <Stack.Screen name="JobBtns" component={JobBtns} />
-        
-
         <Stack.Screen name="TopEmployee" component={TopEmployees} />
+        <Stack.Screen name="FilteredJobs" component={FilteredJobs} />
+
         <Stack.Screen name="JobDetails" component={JobDetails} />
+        <Stack.Screen name="FilterScreen" component={FilterScreen} />
+
+        {
+        //<Stack.Screen name="JobCard" component={JobCard} />
+}
+        <Stack.Screen name="JobList" component={JobList} />
+        <Stack.Screen name="ViewJobDetails" component={ViewJobDetails} />
         <Stack.Screen name="AllUser" component={AllUsers} />
+        <Stack.Screen name="Reviews" component={Reviews} />
         <Stack.Screen name="Employeer1" component={Employeer} />
         <Stack.Screen name="home1" component={home} />
         <Stack.Screen name="user1" component={UserProfile} />

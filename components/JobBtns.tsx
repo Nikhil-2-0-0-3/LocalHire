@@ -23,7 +23,10 @@ export default function JobBtns() {
         <Text style={styles.txt}>List Job</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.btns}>
+      <TouchableOpacity 
+      style={styles.btns}
+      onPress={() => navigation.navigate('JobList')}>
+        
         <Text style={styles.txt}>See More</Text>
       </TouchableOpacity>
     </View>

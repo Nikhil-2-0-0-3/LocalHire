@@ -3,19 +3,19 @@ import { View, Text, StyleSheet } from "react-native";
 import * as Progress from "react-native-progress";
 
 type LoadingProps = {
-  size?: number; // Optional size for the loading animation
-  colors?: string[]; // Optional colors for the loading animation
-  thickness?: number; // Optional thickness of the loading animation
-  duration?: number; // Optional duration of the animation
-  text?: string; // Optional text to display below the animation
+  size?: number; 
+  colors?: string[]; 
+  thickness?: number; 
+  duration?: number; 
+  text?: string; 
 };
 
 const Loading: React.FC<LoadingProps> = ({
-  size = 100,
-  colors = ["#1294FF", "#FF8C42"],
-  thickness = 5,
+  size = 50,
+  colors = ["#ffff"],
+  thickness = 4,
   duration = 800,
-  text = "Loading...",
+  text = "LOADING...",
 }) => {
   return (
     <View style={styles.container}>
@@ -37,12 +37,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "#1294FF"
   },
   text: {
     marginTop: 20,
     fontSize: 16,
-    color: "#1294FF",
+    color: "#ffff",
   },
 });
 

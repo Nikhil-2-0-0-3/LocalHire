@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import axios from 'axios';
+import { useNavigation } from '@react-navigation/native';
 
 const SearchBar = () => {
+  const navigation = useNavigation();
   const [searchText, setSearchText] = useState('');
   const [response, setResponse] = useState('');
   const [error, setError] = useState('');
@@ -45,12 +47,34 @@ const SearchBar = () => {
       // Extract the response text
       const responseText = response.data?.candidates[0]?.content?.parts[0]?.text || 'No content in response';
       setResponse(responseText);
+
+      // Extract location, skill, salary, and rating from the response
+      const locationMatch = responseText.match(/location:\s*([\w\s]+)/);
+      const jobMatch = responseText.match(/job:\s*([\w\s]+)/);
+      const salaryMatch = responseText.match(/min salary:\s*(\d+)/);
+      const ratingMatch = responseText.match(/min rating:\s*(\d+)/);
+
+      const location = locationMatch ? locationMatch[1].trim() : '';
+      const skill = jobMatch ? jobMatch[1].trim() : '';
+      const salary = salaryMatch ? parseInt(salaryMatch[1], 10) : 0;
+      const rating = ratingMatch ? parseInt(ratingMatch[1], 10) : 0;
+
+      console.log("Location:", location);
+      console.log("Job:", skill);
+      console.log('Salary:', salary);
+      console.log('Rating:', rating);
+
       setError(''); // Clear any previous errors
 
+      // Pass the extracted filters to the AllUsers screen
+      navigation.navigate('AllUser', {
+        filters: { location, skill, rating },
+      });
+
       // Validate the response format
-      
+      if (isValidResponseFormat(responseText)) {
         Alert.alert('Extracted Entities', responseText);
-      
+      }
     } catch (error: any) {
       // Handle errors
       if (error.response) {
@@ -83,46 +107,59 @@ const SearchBar = () => {
   }, [recording]);
 
   return (
-    <View style={styles.searchBar}>
-      {/* Search Icon */}
-      <TouchableOpacity
-        onPress={async () => {
-          if (searchText.trim()) {
-            await performNER(searchText);
-          } else {
-            Alert.alert('Error', 'Please enter some text to search.');
-          }
-        }}
-      >
-        <Icon name="search" size={20} color="#1294FF" />
-      </TouchableOpacity>
-
-      {/* Search Input */}
-      {recording ? (
-        <Text style={styles.recordingText}>{dots}</Text>
-      ) : (
-        <TextInput
-          placeholder="Search Job here..."
-          placeholderTextColor="#A3A3A3"
-          style={styles.searchInput}
-          value={searchText}
-          onChangeText={setSearchText}
-          onSubmitEditing={async () => {
+    <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', width: '90%', margin: 'auto' }}>
+      <View style={styles.searchBar}>
+        {/* Search Icon */}
+        <TouchableOpacity
+          onPress={async () => {
             if (searchText.trim()) {
               await performNER(searchText);
             } else {
               Alert.alert('Error', 'Please enter some text to search.');
             }
           }}
-          returnKeyType="search" // Changes the return key to say "Search" on iOS
-        />
-      )}
+        >
+          <Icon name="search" size={20} color="#4335A7" />
+        </TouchableOpacity>
+
+        {/* Search Input */}
+        {recording ? (
+          <Text style={styles.recordingText}>{dots}</Text>
+        ) : (
+          <TextInput
+            placeholder="Search Job here..."
+            placeholderTextColor="#A3A3A3"
+            style={styles.searchInput}
+            value={searchText}
+            onChangeText={setSearchText}
+            onSubmitEditing={async () => {
+              if (searchText.trim()) {
+                await performNER(searchText);
+              } else {
+                Alert.alert('Error', 'Please enter some text to search.');
+              }
+            }}
+            returnKeyType="search" // Changes the return key to say "Search" on iOS
+          />
+        )}
+      </View>
+      <TouchableOpacity style={styles.filterContainer} onPress={() => navigation.navigate('FilterScreen')}>
+        <View style={styles.filterBtn}>
+          <Icon name="sliders" size={25} color="#4335A7" />
+          <Text>Filter</Text>
+        </View>
+      </TouchableOpacity>
     </View>
   );
 };
 
 // Styles
 const styles = StyleSheet.create({
+  filterContainer: {
+    justifyContent: "center", // Centers vertically
+    alignItems: "flex-end", // Moves all items to the right
+    paddingLeft: 10,
+  },
   searchBar: {
     flex: 1,
     flexDirection: 'row',
@@ -131,7 +168,6 @@ const styles = StyleSheet.create({
     width: '90%',
     backgroundColor: '#E5E5E5',
     borderRadius: 4,
-    margin: 'auto',
     paddingVertical: 0,
     paddingHorizontal: 10,
     height: 45,
@@ -146,6 +182,11 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontSize: 16,
     color: '#1294FF',
+  },
+  filterBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

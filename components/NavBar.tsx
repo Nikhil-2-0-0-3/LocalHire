@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import Icon2 from 'react-native-vector-icons/Feather';
 import { firebase } from '@react-native-firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
@@ -45,10 +46,19 @@ export default function NavBar() {
     return (
         <View style={styles.container}>
             {/* LocalHire Text on the far left */}
-            <Text style={styles.title}>LocalHire</Text>
+            <View style={styles.titleContainer}>
+                <Text style={styles.title}>Local</Text>
+                <Text style={styles.title2}>Hire</Text>
+
+            </View>
+           {/* <Text style={styles.title}>LocalHire</Text> */}
 
             {/* Icons on the far right with a gap */}
             <View style={styles.iconsContainer}>
+                <TouchableOpacity onPress={() => navigation.navigate('home1')}>
+                    <Icon2 name="home" size={20} color="#1294FF" />
+                </TouchableOpacity>
+
                 <TouchableOpacity onPress={() => navigation.navigate('Notification')}>
                     <Icon
                         name={hasNotification ? 'bell' : 'bell-slash'}
@@ -65,17 +75,28 @@ export default function NavBar() {
 }
 
 const styles = StyleSheet.create({
+    titleContainer:{
+        flex:1,
+        flexDirection:'row',
+        alignItems:'center'
+    },
+    
     container: {
         flexDirection: 'row',
         justifyContent: 'space-between', // Space between title and icons
         alignItems: 'center', // Vertically center items
-        marginVertical: 20,
-        marginHorizontal: 10,
+        marginVertical:10,
+        padding:10,
     },
     title: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#FFA500', // Optional: Add color to the title
+        color: '#1294FF', // Optional: Add color to the title
+    },
+    title2: {
+        fontSize: 25,
+        fontWeight:'900',
+        color: '#1294FF', // Optional: Add color to the title
     },
     iconsContainer: {
         flexDirection: 'row',

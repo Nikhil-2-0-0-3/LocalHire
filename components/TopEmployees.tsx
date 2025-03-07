@@ -87,11 +87,11 @@ const TopEmployees = () => {
           renderItem={({ item }) => (
             <View style={styles.cardContainer}>
               <View style={styles.card}>
-                <Icon name="user-circle" size={30} color="#1294FF" style={styles.icon} />
+                <Icon name="user-circle" size={30} color="#FF7F3E" style={styles.icon} />
                 <View style={styles.c2}>
                   <Text style={styles.name}>{item.name}</Text>
                   <View style={styles.loc}>
-                    <Icon2 name="location" size={20} color="#1294FF" />
+                    <Icon2 name="location" size={20} color="#4335A7" />
                     <Text> {item.location}</Text>
                   </View>
                 </View>

@@ -5,7 +5,7 @@ import Icon2 from "react-native-vector-icons/EvilIcons";
 import Icon from "react-native-vector-icons/FontAwesome";
 import NavBar from "../components/NavBar";
 import SearchBar from "../components/SearchBar";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Loading from "../components/Loading"; // Import the Loading component
 
@@ -14,14 +14,25 @@ type User = {
   id: string;
   name: string;
   location: string;
-  job: string;
+  job: string[]; // Array of skills
   rating: number;
+};
+
+type Filters = {
+  location?: string;
+  rating?: number;
+  skill?: string;
 };
 
 const AllUsers = () => {
   const [users, setUsers] = useState<User[]>([]); // Store all users
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]); // Store filtered users
   const [loading, setLoading] = useState(true); // Loading state
   const navigation = useNavigation();
+  const route = useRoute();
+
+  // Get filters from route params
+  const filters: Filters = route.params?.filters || {};
 
   const handleHire = async (id: string) => {
     try {
@@ -52,11 +63,12 @@ const AllUsers = () => {
             id: key, // Firebase UID
             name: userData[key].name || "N/A",
             location: userData[key].location || "Unknown",
-            job: userData[key].skills || "Not specified",
+            job: userData[key].skills || [], // Default to empty array if skills are missing
             rating: parseFloat(userData[key].rating) || 0, // Convert rating to number
           }));
 
-          setUsers(userList); // Set all users without filtering
+          setUsers(userList); // Set all users
+          setFilteredUsers(userList); // Initially, display all users
         }
       } catch (error) {
         console.error("Error fetching users:", error);
@@ -67,6 +79,36 @@ const AllUsers = () => {
 
     fetchUsers();
   }, []);
+
+  // Apply filters whenever filters change
+  useEffect(() => {
+    if (filters.location || filters.rating || filters.skill) {
+      const filtered = users.filter((user) => {
+        // Ensure location is a string before calling toLowerCase
+        const userLocation = user.location?.toLowerCase() ?? '';
+        const matchesLocation = filters.location
+          ? userLocation.includes(filters.location.toLowerCase())
+          : true;
+
+        // Ensure rating is a number
+        const userRating = user.rating ?? 0;
+        const matchesRating = filters.rating ? userRating >= filters.rating : true;
+
+        // Ensure job is an array and check if it includes the selected skill
+        const userJob = Array.isArray(user.job) ? user.job : []; // Ensure job is an array
+        const matchesSkill = filters.skill
+          ? userJob.some((skill) =>
+              skill.toLowerCase().includes(filters.skill.toLowerCase()))
+          : true;
+
+        return matchesLocation && matchesRating && matchesSkill;
+      });
+
+      setFilteredUsers(filtered);
+    } else {
+      setFilteredUsers(users); // If no filters, display all users
+    }
+  }, [filters, users]);
 
   if (loading) {
     return <Loading />; // Use the Loading component
@@ -81,7 +123,7 @@ const AllUsers = () => {
       <View style={styles.container}>
         <FlatList
           style={{ marginTop: '10%' }}
-          data={users}
+          data={filteredUsers}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={styles.cardContainer}>
@@ -99,13 +141,13 @@ const AllUsers = () => {
                     Skills:{" "}
                     {Array.isArray(item.job)
                       ? item.job.join(", ")
-                      : String(item.job).replace(/\s*,\s*/g, ", ")}
+                      : "No skills specified"}
                   </Text>
                   <Text>⭐ {item.rating}</Text>
                 </View>
               </View>
               <View style={styles.btnContainer}>
-                <TouchableOpacity style={styles.btn}>
+                <TouchableOpacity style={styles.btn} onPress={() => { navigation.navigate('Reviews', { user: item }) }}>
                   <Text style={{ color: 'white' }}>Profile</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.btn} onPress={() => { handleHire(item.id) }}>
