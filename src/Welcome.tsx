@@ -5,11 +5,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
 type RootStackParamList = {
   JobDetails2: undefined; // Define the route and its parameters (if any)
   // Add other routes here
   home1: undefined;
+  Details: undefined; // Add the Details screen to the type definition
 };
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'home1'>;
 
@@ -19,6 +19,25 @@ export default function Welcome() {
   const fadeAnimHire = useRef(new Animated.Value(0)).current; // Initial value for opacity of "Hire": 0
 
   useEffect(() => {
+    const checkUserAndNavigate = async () => {
+      try {
+        // Retrieve userId from AsyncStorage
+        const userId = await AsyncStorage.getItem('userId');
+        console.log('User ID is:', userId);
+
+        // Navigate based on userId
+        if (userId) {
+          navigation.replace('home1');
+        } else {
+          navigation.replace('Details');
+        }
+      } catch (error) {
+        console.error('Error retrieving userId:', error);
+        // Handle error (e.g., navigate to a fallback screen)
+        navigation.navigate('Details');
+      }
+    };
+
     // First animation: Fade in "Local"
     Animated.timing(fadeAnimLocal, {
       toValue: 1,
@@ -31,10 +50,9 @@ export default function Welcome() {
         duration: 1000, // 1 second
         useNativeDriver: true,
       }).start(() => {
-        // After both animations, navigate to home1 after a delay
+        // After both animations, check user and navigate
         setTimeout(() => {
-          const userId=AsyncStorage.getItem('userId')
-          userId==null?navigation.replace('Details') : navigation.replace('home1');
+          checkUserAndNavigate();
         }, 1000); // 1 second delay before navigation
       });
     });
@@ -55,25 +73,22 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor:'#1294FF'
+    backgroundColor: '#1294FF',
   },
   headingContainer: {
     alignItems: 'center',
-    flex:1,
-    flexDirection:'row',
-    justifyContent:'center',
-    
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   text1: {
     fontSize: 40,
     fontWeight: 'bold',
-    color:'#ffff'
+    color: '#ffff',
   },
   text2: {
     fontSize: 50,
-    fontWeight:'condensed',
-    color:'#ffff'
-
-    
+    fontWeight: 'condensed',
+    color: '#ffff',
   },
 });

@@ -82,28 +82,27 @@ const AllUsers = () => {
 
   // Apply filters whenever filters change
   useEffect(() => {
-    if (filters.location || filters.rating || filters.skill) {
+    if (filters.location || filters.skill || filters.rating) {
       const filtered = users.filter((user) => {
-        // Ensure location is a string before calling toLowerCase
-        const userLocation = user.location?.toLowerCase() ?? '';
-        const matchesLocation = filters.location
-          ? userLocation.includes(filters.location.toLowerCase())
-          : true;
-
-        // Ensure rating is a number
+        // Clean and trim filter values
+        const filterLocation = filters.location ? filters.location.trim().toLowerCase() : '';
+        const filterSkill = filters.skill ? filters.skill.trim().toLowerCase() : '';
+        const filterRating = filters.rating ?? 0;
+  
+        // Ensure user data is valid
+        const userLocation = user.location?.trim().toLowerCase() ?? '';
         const userRating = user.rating ?? 0;
-        const matchesRating = filters.rating ? userRating >= filters.rating : true;
-
-        // Ensure job is an array and check if it includes the selected skill
-        const userJob = Array.isArray(user.job) ? user.job : []; // Ensure job is an array
-        const matchesSkill = filters.skill
-          ? userJob.some((skill) =>
-              skill.toLowerCase().includes(filters.skill.toLowerCase()))
-          : true;
-
-        return matchesLocation && matchesRating && matchesSkill;
+        const userJob = Array.isArray(user.job) ? user.job : [];
+  
+        // Apply filters
+        const matchesLocation = filterLocation ? userLocation.includes(filterLocation) : true;
+        const matchesSkill = filterSkill ? userJob.some((skill) => skill.trim().toLowerCase().includes(filterSkill)) : true;
+        const matchesRating = filterRating > 0 ? userRating >= filterRating : true;
+  
+        // Return true only if ALL conditions are met
+        return matchesLocation && matchesSkill && matchesRating;
       });
-
+  
       setFilteredUsers(filtered);
     } else {
       setFilteredUsers(users); // If no filters, display all users
@@ -147,7 +146,10 @@ const AllUsers = () => {
                 </View>
               </View>
               <View style={styles.btnContainer}>
-                <TouchableOpacity style={styles.btn} onPress={() => { navigation.navigate('Reviews', { user: item }) }}>
+                <TouchableOpacity style={styles.btn} onPress={() => { navigation.navigate('Reviews', { user: item }) 
+              AsyncStorage.setItem('rid',item.id)
+              console.log(item.id)
+              }}>
                   <Text style={{ color: 'white' }}>Profile</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.btn} onPress={() => { handleHire(item.id) }}>

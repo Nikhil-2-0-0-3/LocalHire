@@ -23,7 +23,7 @@ const SearchBar = () => {
   // Function to perform NER using the API
   const performNER = async (inputText: string) => {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
-
+  
     const data = {
       contents: [
         {
@@ -35,7 +35,7 @@ const SearchBar = () => {
         },
       ],
     };
-
+  
     try {
       const response = await axios.post(url, data, {
         headers: {
@@ -43,37 +43,39 @@ const SearchBar = () => {
         },
         timeout: 10000, // 10-second timeout
       });
-
+  
       // Extract the response text
       const responseText = response.data?.candidates[0]?.content?.parts[0]?.text || 'No content in response';
       setResponse(responseText);
-
+  
+      // Log the raw response for debugging
+      console.log('API Response:', responseText);
+  
       // Extract location, skill, salary, and rating from the response
-      const locationMatch = responseText.match(/location:\s*([\w\s]+)/);
-      const jobMatch = responseText.match(/job:\s*([\w\s]+)/);
-      const salaryMatch = responseText.match(/min salary:\s*(\d+)/);
-      const ratingMatch = responseText.match(/min rating:\s*(\d+)/);
-
+      //const locationMatch = responseText.match(/location:\s*([\w\s\-.,]+)/i);
+      const locationMatch = responseText.match(/location:\s*([\w\s\-.,]+?)(?=\s*job:|$)/i);
+      const jobMatch = responseText.match(/job:\s*([\w\s\-.,]+)/i);
+      const salaryMatch = responseText.match(/min salary:\s*([\d,]+)/i);
+      const ratingMatch = responseText.match(/min rating:\s*([\d.]+)/i);
+  
       const location = locationMatch ? locationMatch[1].trim() : '';
       const skill = jobMatch ? jobMatch[1].trim() : '';
-      const salary = salaryMatch ? parseInt(salaryMatch[1], 10) : 0;
-      const rating = ratingMatch ? parseInt(ratingMatch[1], 10) : 0;
-
-      console.log("Location:", location);
-      console.log("Job:", skill);
-      console.log('Salary:', salary);
-      console.log('Rating:', rating);
-
+      const salary = salaryMatch ? parseInt(salaryMatch[1].replace(/,/g, ''), 10) : 0; // Remove commas from salary
+      const rating = ratingMatch ? parseFloat(ratingMatch[1]) : 0;
+  
+      // Log the extracted filters for debugging
+      console.log('Extracted Filters:', { location, skill, salary, rating });
+  
       setError(''); // Clear any previous errors
-
-      // Pass the extracted filters to the AllUsers screen
-      navigation.navigate('AllUser', {
-        filters: { location, skill, rating },
-      });
-
-      // Validate the response format
-      if (isValidResponseFormat(responseText)) {
-        Alert.alert('Extracted Entities', responseText);
+  
+      // Validate the extracted filters
+      if (location || skill || salary || rating) {
+        // Pass the extracted filters to the AllUsers screen
+        navigation.navigate('AllUser', {
+          filters: { location, skill, rating },
+        });
+      } else {
+        Alert.alert('Error', 'No valid filters extracted from the response.');
       }
     } catch (error: any) {
       // Handle errors
@@ -84,9 +86,9 @@ const SearchBar = () => {
       } else {
         setError('Error: ' + error.message);
       }
-
+  
       setResponse('');
-      Alert.alert('Error', error);
+      Alert.alert('Error', error.message || 'An error occurred while processing the request.');
     }
   };
 

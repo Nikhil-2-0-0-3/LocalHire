@@ -58,12 +58,67 @@ const FilterScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
-  label: { fontSize: 16, fontWeight: 'bold', marginTop: 10 },
-  input: { borderWidth: 1, padding: 10, borderRadius: 5, marginTop: 5 },
-  slider: { width: '100%', height: 40 },
-  button: { backgroundColor: '#007bff', padding: 15, borderRadius: 5, marginTop: 20, alignItems: 'center' },
-  buttonText: { color: 'white', fontWeight: 'bold' },
+  container: { 
+    flex: 1, 
+    padding: 20, 
+    backgroundColor: '#f1f3f4' 
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 30,
+    color: '#343a40',
+  },
+  label: { 
+    fontSize: 18, 
+    fontWeight: '600', 
+    marginTop: 20,
+    color: '#495057',
+  },
+  input: { 
+    borderWidth: 1, 
+    padding: 12, 
+    borderRadius: 12, 
+    marginTop: 8, 
+    borderColor: '#ced4da',
+    backgroundColor: '#ffffff',
+    fontSize: 16,
+  },
+  slider: { 
+    width: '100%', 
+    height: 40, 
+    marginTop: 10 
+  },
+  button: { 
+    backgroundColor: '#007bff', 
+    padding: 18, 
+    borderRadius: 12, 
+    marginTop: 30, 
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  clearButton: { 
+    backgroundColor: '#6c757d', 
+    padding: 18, 
+    borderRadius: 12, 
+    marginTop: 20, 
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  buttonText: { 
+    color: 'white', 
+    fontWeight: 'bold',
+    fontSize: 18,
+  }
 });
 
 export default FilterScreen;

@@ -11,6 +11,7 @@ type Job = {
   date: string;
   time: string;
   type: string;
+  job_type:string;
 };
 
 const FilteredJobs = () => {
@@ -44,6 +45,7 @@ const FilteredJobs = () => {
               date: jobsData[key].date,
               time: jobsData[key].time,
               type: jobsData[key].type,
+              job_type: jobsData[key].job_type,
             }))
             .filter((job) => job.type === 'B') // Filter jobs where job_type is 'B'
             .slice(0, 3); // Limit to only 3 jobs
@@ -77,7 +79,7 @@ const FilteredJobs = () => {
         renderItem={({ item }) => (
           <JobCard
             jobId={item.job_id}
-            title={item.title}
+            title={item.job_type}
             location={item.location}
             date={item.date}
             time={item.time}

@@ -1,224 +1,159 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import auth from '@react-native-firebase/auth';
+import { firebase } from '@react-native-firebase/database';
+import Icon from "react-native-vector-icons/Feather";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CommonActions } from '@react-navigation/native';
 
-const UserProfile = () => {
-  return (
-    <SafeAreaView style={styles.container}>
-      <View>
-        <Text style={styles.account}>Accounts & Settings</Text>
-      </View>
-
-      <View style={styles.profile}>
-        <View style={styles.roundWhiteView}>
-          <Image
-            source={require('./assets/image.png')}
-            style={styles.image}
-          />
-        </View>
-        <View style={styles.textContainer}>
-          <Text style={styles.name}>John Doe</Text>
-          <Text style={styles.email}>johndoe@example.com</Text>
-        </View>
-      </View>
-
-      <View style={styles.accept}>
-        <View style={styles.column}>
-          <Text style={styles.statusText}>Applied</Text>
-          <Text style={styles.numberText}>0</Text>
-        </View>
-        <View style={styles.column}>
-          <Text style={styles.statusText}>Reviewed</Text>
-          <Text style={styles.numberText}>0</Text>
-        </View>
-        <View style={styles.column}>
-          <Text style={styles.statusText}>Accepted</Text>
-          <Text style={styles.numberText}>0</Text>
-        </View>
-      </View>
-
-      <View style={{ padding: 15 }}>
-  {/* Personal Profile */}
-  <View style={styles.menuItem}>
-    <Image source={require('./assets/Vector.png')} style={styles.icon} />
-    <Text style={styles.menuText}>Personal Profile</Text>
-    <TouchableOpacity>
-      <Image source={require('./assets/chevron-right.png')} style={styles.chevron} />
-    </TouchableOpacity>
-  </View>
-
-  {/* Change Password */}
-  <View style={styles.menuItem}>
-    <Image source={require('./assets/Frame.png')} style={styles.icon} />
-    <Text style={styles.menuText}>Change Password</Text>
-    <TouchableOpacity>
-      <Image source={require('./assets/chevron-right.png')} style={styles.chevron} />
-    </TouchableOpacity>
-  </View>
-
-  {/* Job Applied */}
-  <View style={styles.menuItem}>
-    <Image source={require('./assets/job.png')} style={styles.icon} />
-    <Text style={styles.menuText}>Job Applied</Text>
-    <TouchableOpacity>
-      <Image source={require('./assets/chevron-right.png')} style={styles.chevron} />
-    </TouchableOpacity>
-  </View>
-
-  {/* Favorite Job */}
-  <View style={styles.menuItem}>
-    <Image source={require('./assets/love.png')} style={styles.icon} />
-    <Text style={styles.menuText}>Favorite Job</Text>
-    <TouchableOpacity>
-      <Image source={require('./assets/chevron-right.png')} style={styles.chevron} />
-    </TouchableOpacity>
-  </View>
-
-  
-
-  {/* Settings */}
-  <View style={styles.menuItem}>
-    <Image source={require('./assets/settings.png')} style={styles.icon} />
-    <Text style={styles.menuText}>Settings</Text>
-    <TouchableOpacity>
-      <Image source={require('./assets/chevron-right.png')} style={styles.chevron} />
-    </TouchableOpacity>
-  </View>
-</View>
-<View style={styles.logout}>
-<View style={styles.menuItem}>
-    <Image source={require('./assets/logout.png')} style={styles.icon} />
-    <Text style={styles.logoutt}>Logout</Text>
-    <TouchableOpacity>
-      <Image source={require('./assets/chevron-right.png')} style={styles.logouti} />
-    </TouchableOpacity>
-  </View>
-        
-      </View>
-
-    </SafeAreaView>
+const clearAndNavigate = (navigation) => {
+  navigation.dispatch(
+    CommonActions.reset({
+      index: 0, // The active screen index
+      routes: [{ name: 'Details' }], // Replace with your target screen
+    })
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 20, // Add horizontal padding to the container for some breathing room
-  },
-  account: {
-    fontWeight: '800',
-    fontSize: 25,
-    marginTop: 30, // Adjusted for spacing
-    marginBottom: 20, // Spacing below the header
-    textAlign: 'center', // Center the text
-  },
-  profile: {
-    height: 120, // Increased height for better spacing
-    backgroundColor: '#0057FF',
-    borderRadius: 25,
-    flexDirection: 'row',
-    marginBottom: 30, // Add space below the profile section
-    paddingHorizontal: 15, // Ensure text and image don't touch the edges
-    alignItems: 'center', // Vertically align the items
-  },
-  roundWhiteView: {
-    width: 64,
-    height: 64,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 75,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    shadowColor: '#FFFFFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  textContainer: {
-    marginLeft: 20,
-    justifyContent: 'center',
-  },
-  name: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  email: {
-    fontSize: 14,
-    fontWeight: '300',
-    color: '#FFFFFF',
-  },
-  image: {
-    width: 50,
-    top:5,
-    left:3,
-    height: 120,
-    borderRadius: 25, // Make the image circular
-  },
-  accept: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly', // Evenly distribute the columns
-    marginTop: 30,
-    width: '100%',
-    paddingBottom:50,
-  },
-  column: {
-    alignItems: 'center',
-  },
-  statusText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
-  },
-  numberText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0057FF', // Blue color for the number
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  icon: {
-    width: 24,
-    height: 24,
-    marginRight: 15,
-  },
-  menuText: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-  },
-  chevron: {
-    width: 20,
-    height: 20,
-    
-  },
-  logout:{
-    height: 50, // Increased height for better spacing
-    backgroundColor: '#E5020B',
-    borderRadius: 25,
-    flexDirection: 'row',
-    marginBottom: 30, // Add space below the profile section
-    paddingHorizontal: 15, // Ensure text and image don't touch the edges
-    alignItems: 'center',
-    top:50, // Vertically align the items
-  },
-  logoutt:{
-    flex: 1,
-    fontSize: 15,
-    color: '#FFFFFF',
-  },
-  logouti:{
-    width: 20,
-    height: 20,
-    tintColor:'#FFFFFF',
+const UserProfile = ({ navigation }) => {
+  const [userData, setUserData] = useState({
+    name: '',
+    email: '',
+    profileImage: null,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const user = auth().currentUser; // Get logged-in user from Firebase Auth
+
+      if (user) {
+        const userId = user.uid;
+        const reference = firebase
+          .app()
+          .database('https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/')
+          .ref(`users/${userId}`);
+
+        reference.once('value').then((snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.val();
+            setUserData({
+              name: data.name || 'N/A',
+              email: user.email || 'Unknown',
+              profileImage: data.profileImage || null, // Ensure your database has this field
+            });
+          }
+          setLoading(false);
+        }).catch((error) => {
+          console.error('Error fetching user data:', error);
+          setLoading(false);
+        });
+      } else {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const handleLogout = async () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Logout",
+          onPress: async () => {
+            try {
+              await auth().signOut();
+              await AsyncStorage.clear();
+              clearAndNavigate(navigation)
+              //navigation.replace("Details"); // Redirect to Login screen
+            } catch (error) {
+              console.error("Logout Error:", error);
+            }
+          },
+          style: "destructive",
+        }
+      ]
+    );
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#0057FF" />
+      </SafeAreaView>
+    );
   }
+
+  return (
+    <SafeAreaView style={styles.container}>
+    <View>
+      <Text style={styles.account}>Accounts & Settings</Text>
+    </View>
+
+    <View style={styles.profile}>
+      <View style={styles.roundWhiteView}>
+        {userData.profileImage ? (
+          <Image source={{ uri: userData.profileImage }} style={styles.image} />
+        ) : (
+          <Image source={require('./assets/image.png')} style={styles.image} />
+        )}
+      </View>
+      <View style={styles.textContainer}>
+        <Text style={styles.name}>{userData.name}</Text>
+        <Text style={styles.email}>{userData.email}</Text>
+      </View>
+    </View>
+
+    <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChangeP')}>
+      <Image source={require('./assets/Frame.png')} style={styles.icon} />
+      <Text style={styles.menuText}>Change Password</Text>
+      <TouchableOpacity onPress={() => navigation.navigate('ChangeP')}>
+        <Image source={require('./assets/chevron-right.png')} style={styles.chevron} />
+      </TouchableOpacity>
+    </TouchableOpacity>
+
+    <View style={styles.menuItem}>
+    <Icon name="mail" size={25} color="grey" />
+      <Text style={styles.menuText}>Change Email</Text>
+      <TouchableOpacity  onPress={() => navigation.navigate('ChangeE')}>
+        <Image source={require('./assets/chevron-right.png')} style={styles.chevron} />
+      </TouchableOpacity>
+    </View>
+
+    <View style={styles.logout}>
+      <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+        <Image source={require('./assets/logout.png')} style={[styles.icon, { tintColor: '#FFFFFF' }]} />
+        <Text style={styles.logoutText}>Logout</Text>
+        <Image source={require('./assets/chevron-right.png')} style={[styles.chevron, styles.logoutChevron]} />
+      </TouchableOpacity>
+    </View>
+  </SafeAreaView>
+);
+};
+
+const styles = StyleSheet.create({
+loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+container: { flex: 1, paddingHorizontal: 20 },
+account: { fontWeight: '800', fontSize: 25, marginTop: 30, marginBottom: 20, textAlign: 'center' },
+profile: { height: 120, backgroundColor: '#0057FF', borderRadius: 25, flexDirection: 'row', marginBottom: 30, paddingHorizontal: 15, alignItems: 'center' },
+roundWhiteView: { width: 64, height: 64, backgroundColor: '#FFFFFF', borderRadius: 75, alignItems: 'center', justifyContent: 'center' },
+textContainer: { marginLeft: 20, justifyContent: 'center' },
+name: { fontSize: 20, fontWeight: 'bold', color: '#FFFFFF' },
+email: { fontSize: 14, fontWeight: '300', color: '#FFFFFF' },
+image: { width: 50, height: 50, borderRadius: 25 },
+menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#E0E0E0' },
+icon: { width: 24, height: 24, marginRight: 15 },
+menuText: { flex: 1, fontSize: 16, color: '#333',left:20 },
+chevron: { width: 20, height: 20 },
+logout: { marginTop: 50 },
+logoutButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E5020B', padding: 15, borderRadius: 25 },
+logoutText: { flex: 1, fontSize: 16, color: '#FFFFFF', textAlign: 'center' },
+logoutChevron: { tintColor: '#FFFFFF' },
 });
 
 export default UserProfile;

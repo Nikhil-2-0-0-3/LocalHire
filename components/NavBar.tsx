@@ -19,16 +19,18 @@ const checkNotification = async () => {
 
     if (!snapshot.exists()) return false; // No notifications found
 
-    let allActive = true; // Assume all notifications are active initially
+    let hasActiveNotification = false; // Assume no active notifications initially
 
     snapshot.forEach((childSnap) => {
         const notificationData = childSnap.val(); // Get the notification data
-        if (notificationData.btnActive === false) {
-            allActive = false; // Set to false if any notification has btnActive: false
+        console.log(notificationData.btnActive)
+        if (notificationData.btnActive === true) {
+            hasActiveNotification = true; // Set to true if any notification has btnActive: true
         }
     });
+    
 
-    return allActive; // Return true only if all notifications have btnActive: true
+    return hasActiveNotification; // Return true if at least one notification has btnActive: true
 };
 
 export default function NavBar() {
@@ -61,7 +63,7 @@ export default function NavBar() {
 
                 <TouchableOpacity onPress={() => navigation.navigate('Notification')}>
                     <Icon
-                        name={hasNotification ? 'bell' : 'bell-slash'}
+                        name={ hasNotification? 'bell' : 'bell-slash'}
                         size={20}
                         color="#1294FF"
                     />

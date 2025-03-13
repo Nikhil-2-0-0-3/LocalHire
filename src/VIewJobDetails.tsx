@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { firebase } from '@react-native-firebase/database';
+import Loading from '../components/Loading';
 
 type JobDetails = {
   job_id: string;
@@ -12,6 +13,7 @@ type JobDetails = {
   budget: number;
   duration: string;
   contact_info: string;
+  job_type:string;
 };
 
 const ViewJobDetails = ({ route }:any) => {
@@ -43,7 +45,7 @@ const ViewJobDetails = ({ route }:any) => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Loading...</Text>
+        <Loading/>
       </View>
     );
   }
@@ -58,14 +60,14 @@ const ViewJobDetails = ({ route }:any) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{job.title}</Text>
+      <Text style={styles.title}>{job.job_type}</Text>
       <Text style={styles.detail}>📍 {job.location}</Text>
       <Text style={styles.detail}>📅 {job.date}</Text>
       <Text style={styles.detail}>⏰ {job.time}</Text>
       <Text style={styles.detail}>💰 Budget: ${job.budget}</Text>
       <Text style={styles.detail}>⏳ Duration: {job.duration}</Text>
       <Text style={styles.detail}>📞 Contact: {job.contact_info}</Text>
-      <Text style={styles.description}>{job.description}</Text>
+      
     </View>
   );
 };

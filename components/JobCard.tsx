@@ -8,6 +8,7 @@ type JobCardProps = {
   location: string;
   date: string;
   time: string;
+  senderUid:string;
 };
 
 const JobCard: React.FC<JobCardProps> = ({ jobId, title, location, date, time }) => {

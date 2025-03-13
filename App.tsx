@@ -23,6 +23,7 @@ import JobCard from './components/JobCard.tsx';
 import ViewJobDetails from './src/VIewJobDetails.tsx';
 import FilterScreen from './src/FilterScreen.tsx';
 import FilteredJobs from './components/FilteredJobs.tsx';
+import ChangePassword from './src/changepassword.tsx';
 // Request notification permissions
 const requestUserPermission = async () => {
   const authStatus = await messaging().requestPermission();
@@ -59,6 +60,7 @@ type RootStackParamList = {
   ViewJobDetails:undefined;
   FilterScreen:undefined;
   FilteredJobs:undefined;
+  ChangeP:undefined;
 };
 
 // Define Props for HomeScreen
@@ -88,6 +90,7 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
             onPress={() => {
               //navigation to home if the user has already logged in 
               const userId=AsyncStorage.getItem('userId')
+              console.log(userId)
               userId==null?navigation.navigate('Details') : navigation.navigate('home1');
               navigation.navigate('Details')
             }}
@@ -122,12 +125,14 @@ const DetailsScreen = ({ navigation }: EmpScreenProps) => {
             top: 30,
           }}
         >
-          Sign Up As
+          Select your role
         </Text>
+        <View>
         <TouchableOpacity
           style={styles.leftbtn}
           onPress={() => {
-            navigation.navigate('Employee');
+            navigation.replace('Employee');
+            AsyncStorage.setItem('role','employee')
           }}
         >
           <Text style={{ fontWeight: 'bold' }}>Employee</Text>
@@ -135,11 +140,14 @@ const DetailsScreen = ({ navigation }: EmpScreenProps) => {
         <TouchableOpacity
           style={styles.rightbtn}
           onPress={() => {
-            navigation.navigate('Employee');
+            navigation.replace('Employee');
+            AsyncStorage.setItem('role','employer')
+
           }}
         >
           <Text style={{ fontWeight: 'bold' }}>Employer</Text>
         </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -417,8 +425,8 @@ export default function App() {
           headerShown: false, // Disables the header for all screens
         }}
       >
-        {
-        <Stack.Screen name='Welcome' component={Welcome}/>}
+        
+        <Stack.Screen name='Welcome' component={Welcome}/> 
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Details" component={DetailsScreen} />
         <Stack.Screen name="Employee" component={EmployeePg2} />
@@ -443,6 +451,8 @@ export default function App() {
         <Stack.Screen name="Employeer1" component={Employeer} />
         <Stack.Screen name="home1" component={home} />
         <Stack.Screen name="user1" component={UserProfile} />
+        <Stack.Screen name="ChangeP" component={ChangePassword} />
+
       </Stack.Navigator>
     </NavigationContainer>
   );

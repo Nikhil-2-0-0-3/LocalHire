@@ -11,6 +11,7 @@ import { Picker } from '@react-native-picker/picker';
 import messaging from '@react-native-firebase/messaging';
 import { firebase } from '@react-native-firebase/database';
 
+
 PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
 
 const EmployeePg2 = ({ navigation }) => {
@@ -52,7 +53,9 @@ const EmployeePg2 = ({ navigation }) => {
         .set(userData);
 
       await AsyncStorage.setItem('userId', user.uid);
-      navigation.navigate('Skill');
+      const role= await AsyncStorage.getItem('role')
+      role=='employee' ? navigation.replace('Skill') :navigation.replace('home1')
+      
     } catch (error) {
       console.error(error);
       Alert.alert('Error', 'Failed to create user. Please try again.');
@@ -67,7 +70,7 @@ const EmployeePg2 = ({ navigation }) => {
       const userCredential = await auth().signInWithEmailAndPassword(email, password);
       const userId = userCredential.user.uid;
       await AsyncStorage.setItem('userId', userId);
-      navigation.navigate('home1');
+      navigation.replace('home1');
     } catch (error) {
       console.error(error);
       Alert.alert('Error', 'Invalid email or password.');
@@ -222,6 +225,7 @@ const EmployeePg2 = ({ navigation }) => {
                         <View style={styles.unit}>
                           <Text>Gender</Text>
                           <Picker
+                            style={styles.picker}
                             selectedValue={values.gender}
                             onValueChange={(itemValue) => setFieldValue('gender', itemValue)}
                           >
@@ -302,11 +306,22 @@ const styles = StyleSheet.create({
     marginTop:5,
      borderWidth:0,
      width:"95%",
-     height:40,
+     height:45,
+     
+     backgroundColor:'#E5E5E5',
+     color:'grey',
+     fontSize:14,
+
+  },
+  picker:{
+    marginTop:5,
+     borderWidth:0,
+     width:"95%",
+     height:50,
      borderRadius:25,
      backgroundColor:'#E5E5E5',
-     color:'black'
-
+     color:'grey',
+     fontSize:0,
   },
   showhide:{
     color:'#1294FF',

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { firebase } from '@react-native-firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Loading from '../components/Loading';
 
 const NotificationsScreen = ({ navigation }) => {
   const [notifications, setNotifications] = useState([]);
@@ -143,7 +144,7 @@ const NotificationsScreen = ({ navigation }) => {
     <View style={styles.card}>
       <Text style={styles.jobType}>{item.job_type}</Text>
       <Text style={styles.location}>{item.location}</Text>
-      <Text style={styles.date}>{new Date(item.date).toLocaleDateString()}</Text>
+      <Text style={styles.date}>{item.date}</Text>
       {item.message && <Text style={styles.message}>{item.message}</Text>}
       {item.type === 'A' && item.btnActive && (
         <View style={styles.buttonsContainer}>
