@@ -117,13 +117,15 @@ const UserProfile = ({ navigation }) => {
       </TouchableOpacity>
     </TouchableOpacity>
 
-    <View style={styles.menuItem}>
-    <Icon name="mail" size={25} color="grey" />
-      <Text style={styles.menuText}>Change Email</Text>
-      <TouchableOpacity  onPress={() => navigation.navigate('ChangeE')}>
+    <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Wp')}>
+      <Image source={require('./assets/Frame.png')} style={styles.icon} />
+      <Text style={styles.menuText}>Wp</Text>
+      <TouchableOpacity onPress={() => navigation.navigate('ChangeP')}>
         <Image source={require('./assets/chevron-right.png')} style={styles.chevron} />
       </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
+
+    
 
     <View style={styles.logout}>
       <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>

@@ -24,6 +24,7 @@ import ViewJobDetails from './src/VIewJobDetails.tsx';
 import FilterScreen from './src/FilterScreen.tsx';
 import FilteredJobs from './components/FilteredJobs.tsx';
 import ChangePassword from './src/changepassword.tsx';
+import WhatsAppScreen from './src/WhatsAppScreen.tsx';
 // Request notification permissions
 const requestUserPermission = async () => {
   const authStatus = await messaging().requestPermission();
@@ -61,6 +62,7 @@ type RootStackParamList = {
   FilterScreen:undefined;
   FilteredJobs:undefined;
   ChangeP:undefined;
+  Wp:undefined;
 };
 
 // Define Props for HomeScreen
@@ -440,6 +442,7 @@ export default function App() {
 
         <Stack.Screen name="JobDetails" component={JobDetails} />
         <Stack.Screen name="FilterScreen" component={FilterScreen} />
+        <Stack.Screen name='Wp' component={WhatsAppScreen}/>
 
         {
         //<Stack.Screen name="JobCard" component={JobCard} />

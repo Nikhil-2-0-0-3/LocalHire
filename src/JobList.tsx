@@ -4,7 +4,8 @@ import { firebase } from '@react-native-firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import JobCard from '../components/JobCard';
 import Loading from '../components/Loading';
-
+import NavBar from '../components/NavBar';
+import SearchBar from '../components/SearchBar';
 type Job = {
   job_id: string;
   title: string;
@@ -112,7 +113,12 @@ const JobList = () => {
 
   return (
     <View style={styles.container}>
+      <NavBar/>
+      <View style={{ height: 45 }}>
+        <SearchBar />
+      </View>
       <FlatList
+      style={{marginTop:30}}
         data={jobs}
         keyExtractor={(item) => item.job_id}
         renderItem={({ item }) => (
