@@ -146,7 +146,9 @@ const AllUsers = () => {
                 </View>
               </View>
               <View style={styles.btnContainer}>
-                <TouchableOpacity style={styles.btn} onPress={() => { navigation.navigate('Reviews', { user: item }) 
+                <TouchableOpacity style={styles.btn} onPress={() => { 
+                  console.log(item)
+                  navigation.navigate('Reviews', { user: item }) 
               AsyncStorage.setItem('rid',item.id)
               console.log(item.id)
               }}>

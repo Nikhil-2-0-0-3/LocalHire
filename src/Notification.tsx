@@ -7,6 +7,7 @@ import Loading from '../components/Loading';
 const NotificationsScreen = ({ navigation }) => {
   const [notifications, setNotifications] = useState([]);
   const [responses, setResponses] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Fetch notifications and responses
   const fetchData = async () => {
@@ -18,17 +19,35 @@ const NotificationsScreen = ({ navigation }) => {
 
       // Fetch notifications
       const notificationsRef = db.ref(`users/${uid}/notifications`);
-      notificationsRef.on('value', (snapshot) => {
+      notificationsRef.on('value', async (snapshot) => {
         if (snapshot.exists()) {
           const notificationsData = snapshot.val();
-          const notificationsList = Object.keys(notificationsData).map((key) => ({
-            id: key,
-            ...notificationsData[key],
-          }));
+          const notificationsList = await Promise.all(
+            Object.keys(notificationsData).map(async (key) => {
+              const notification = notificationsData[key];
+              let message = notification.message;
+              
+              // For type B notifications, get applier's name
+              if (notification.type === 'B' && notification.senderUid) {
+                const applierSnapshot = await db.ref(`users/${notification.senderUid}/name`).once('value');
+                const applierName = applierSnapshot.val();
+                const jobSnapshot = await db.ref(`Jobs/${notification.jobId}`).once('value');
+                const jobData = jobSnapshot.val();
+                message = `${applierName} has applied for the ${jobData.job_type}`;
+              }
+              
+              return {
+                id: key,
+                ...notification,
+                message: message
+              };
+            })
+          );
           setNotifications(notificationsList);
         } else {
           setNotifications([]);
         }
+        setLoading(false);
       });
 
       // Fetch responses
@@ -56,6 +75,7 @@ const NotificationsScreen = ({ navigation }) => {
       });
     } catch (error) {
       console.error('Error fetching data:', error);
+      setLoading(false);
     }
   };
 
@@ -64,7 +84,7 @@ const NotificationsScreen = ({ navigation }) => {
   }, []);
 
   // Handle job acceptance
-  const handleAcceptJob = async (jobId, notificationId) => {
+  const handleAcceptJob = async (jobId, notificationId, type, senderUid) => {
     try {
       const uid = await AsyncStorage.getItem('userId');
       const db = firebase.app().database('https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/');
@@ -75,14 +95,16 @@ const NotificationsScreen = ({ navigation }) => {
       // Get job data
       const jobSnapshot = await db.ref(`Jobs/${jobId}`).once('value');
       const jobData = jobSnapshot.val();
-      const senderUid = jobData.senderUid;
+      
+      // For type B, the senderUid is the applier's UID
+      const targetUid = type === 'B' ? senderUid : jobData.senderUid;
 
       // Fetch sender's name
-      const senderSnapshot = await db.ref(`users/${senderUid}/name`).once('value');
+      const senderSnapshot = await db.ref(`users/${targetUid}/name`).once('value');
       const senderName = senderSnapshot.val();
 
       // Send response to the sender
-      await db.ref(`users/${senderUid}/responses/${jobId}`).set({
+      await db.ref(`users/${targetUid}/responses/${jobId}`).set({
         jobId,
         status: 'accepted',
         job_type: jobData.job_type,
@@ -92,8 +114,18 @@ const NotificationsScreen = ({ navigation }) => {
       // Update notification message
       await db.ref(`users/${uid}/notifications/${notificationId}`).update({
         btnActive: false,
-        message: `You accepted the job: ${jobData.job_type}`,
+        message: type === 'B' ? 
+          `You accepted ${senderName}'s application for ${jobData.job_type}` : 
+          `You accepted the job: ${jobData.job_type}`,
       });
+
+      // For type B, also update the applier's notification
+      if (type === 'B') {
+        await db.ref(`users/${senderUid}/notifications/${notificationId}`).update({
+          btnActive: false,
+          message: `Your application for ${jobData.job_type} was accepted`,
+        });
+      }
 
       Alert.alert('Job Accepted', 'You have accepted the job.');
     } catch (error) {
@@ -102,7 +134,7 @@ const NotificationsScreen = ({ navigation }) => {
   };
 
   // Handle job rejection
-  const handleRejectJob = async (jobId, notificationId) => {
+  const handleRejectJob = async (jobId, notificationId, type, senderUid) => {
     try {
       const uid = await AsyncStorage.getItem('userId');
       const db = firebase.app().database('https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/');
@@ -113,14 +145,16 @@ const NotificationsScreen = ({ navigation }) => {
       // Get job data
       const jobSnapshot = await db.ref(`Jobs/${jobId}`).once('value');
       const jobData = jobSnapshot.val();
-      const senderUid = jobData.senderUid;
+      
+      // For type B, the senderUid is the applier's UID
+      const targetUid = type === 'B' ? senderUid : jobData.senderUid;
 
       // Fetch sender's name
-      const senderSnapshot = await db.ref(`users/${senderUid}/name`).once('value');
+      const senderSnapshot = await db.ref(`users/${targetUid}/name`).once('value');
       const senderName = senderSnapshot.val();
 
       // Send response to the sender
-      await db.ref(`users/${senderUid}/responses/${jobId}`).set({
+      await db.ref(`users/${targetUid}/responses/${jobId}`).set({
         jobId,
         status: 'rejected',
         job_type: jobData.job_type,
@@ -130,8 +164,18 @@ const NotificationsScreen = ({ navigation }) => {
       // Update notification message
       await db.ref(`users/${uid}/notifications/${notificationId}`).update({
         btnActive: false,
-        message: `You rejected the job: ${jobData.job_type}`,
+        message: type === 'B' ? 
+          `You rejected ${senderName}'s application for ${jobData.job_type}` : 
+          `You rejected the job: ${jobData.job_type}`,
       });
+
+      // For type B, also update the applier's notification
+      if (type === 'B') {
+        await db.ref(`users/${senderUid}/notifications/${notificationId}`).update({
+          btnActive: false,
+          message: `Your application for ${jobData.job_type} was rejected`,
+        });
+      }
 
       Alert.alert('Job Rejected', 'You have rejected the job.');
     } catch (error) {
@@ -142,21 +186,32 @@ const NotificationsScreen = ({ navigation }) => {
   // Render notification card
   const renderNotificationCard = ({ item }) => (
     <View style={styles.card}>
-      <Text style={styles.jobType}>{item.job_type}</Text>
-      <Text style={styles.location}>{item.location}</Text>
-      <Text style={styles.date}>{item.date}</Text>
-      {item.message && <Text style={styles.message}>{item.message}</Text>}
-      {item.type === 'A' && item.btnActive && (
+      <Text style={styles.jobType}>{item.job_type || 'Job Application'}</Text>
+      <Text style={styles.message}>{item.message}</Text>
+      
+      {item.btnActive && (
         <View style={styles.buttonsContainer}>
+          {item.type === 'B' && item.senderUid && (
+            <TouchableOpacity
+              style={[styles.button, styles.viewButton]}
+              onPress={() => {
+                console.log('uid',item.senderUid)
+                const item1={id:item.senderUid};
+                navigation.navigate('Reviews', { user: item1 })}}
+            >
+              <Text style={styles.buttonText}>View Profile</Text>
+            </TouchableOpacity>
+          )}
+          
           <TouchableOpacity
             style={[styles.button, styles.acceptButton]}
-            onPress={() => handleAcceptJob(item.job_id, item.id)}
+            onPress={() => handleAcceptJob(item.jobId || item.job_id, item.id, item.type, item.senderUid)}
           >
             <Text style={styles.buttonText}>Accept</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.button, styles.rejectButton]}
-            onPress={() => handleRejectJob(item.job_id, item.id)}
+            onPress={() => handleRejectJob(item.jobId || item.job_id, item.id, item.type, item.senderUid)}
           >
             <Text style={styles.buttonText}>Reject</Text>
           </TouchableOpacity>
@@ -171,6 +226,14 @@ const NotificationsScreen = ({ navigation }) => {
       <Text style={styles.message}>{item.message}</Text>
     </View>
   );
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Loading />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -198,6 +261,11 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: '#fff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   heading: {
     fontSize: 24,
@@ -231,12 +299,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 10,
+    flexWrap: 'wrap',
   },
   button: {
     padding: 10,
     borderRadius: 5,
-    width: '48%',
+    width: '30%',
     alignItems: 'center',
+    marginVertical: 5,
+  },
+  viewButton: {
+    backgroundColor: '#1294FF',
   },
   acceptButton: {
     backgroundColor: '#4CAF50',
@@ -247,6 +320,8 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontWeight: 'bold',
+    fontSize: 12,
+    textAlign: 'center',
   },
 });
 

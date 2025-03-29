@@ -2,28 +2,53 @@ import React, { useEffect, useState } from 'react';
 import { View, FlatList, StyleSheet, Text } from 'react-native';
 import { firebase } from '@react-native-firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import JobCard from '../components/JobCard'; // Import the JobCard component
+import JobCard from '../components/JobCard';
 import Loading from '../components/Loading';
 
 type Job = {
   job_id: string;
   title: string;
   location: string;
-  date: string;
+  date?: string; // Make date optional since it might be undefined
   time: string;
-  type: string; // Add job_type to the Job type
+  type: string;
 };
 
 const JobList = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Safe date parsing with validation
+  const parseDate = (dateString?: string): Date | null => {
+    if (!dateString) return null;
+    
+    try {
+      const parts = dateString.split('/');
+      if (parts.length !== 3) return null;
+      
+      const [day, month, year] = parts.map(Number);
+      if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+      
+      return new Date(year, month - 1, day);
+    } catch (e) {
+      console.warn('Failed to parse date:', dateString);
+      return null;
+    }
+  };
+
+  const getCurrentDate = (): Date => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize to start of day
+    return today;
+  };
 
   useEffect(() => {
     const fetchJobs = async () => {
       try {
         const uid = await AsyncStorage.getItem('userId');
         if (!uid) {
-          console.error('User ID not found');
+          setError('User ID not found');
           return;
         }
 
@@ -31,24 +56,40 @@ const JobList = () => {
         const jobsRef = db.ref('Jobs');
 
         const snapshot = await jobsRef.once('value');
-        if (snapshot.exists()) {
-          const jobsData = snapshot.val();
-          const jobsList: Job[] = Object.keys(jobsData)
-            .map((key) => ({
-              
-              job_id: key,
-              title: jobsData[key].title,
-              location: jobsData[key].location,
-              date: jobsData[key].date,
-              time: jobsData[key].time,
-              type: jobsData[key].type, // Include job_type in the job object
-            }))
-            .filter((job) => job.type === 'B'); // Filter jobs where job_type is 'A'
-
-          setJobs(jobsList);
+        if (!snapshot.exists()) {
+          setJobs([]);
+          return;
         }
+
+        const jobsData = snapshot.val();
+        const currentDate = getCurrentDate();
+
+        const jobsList: Job[] = Object.keys(jobsData)
+          .map((key) => ({
+            job_id: key,
+            title: jobsData[key].title || 'No Title',
+            location: jobsData[key].location || 'No Location',
+            date: jobsData[key].date, // Might be undefined
+            time: jobsData[key].time || 'No Time',
+            type: jobsData[key].type || 'No Type',
+          }))
+          .filter((job) => {
+            // Only process type B jobs
+            if (job.type !== 'B') return false;
+            
+            // Skip if no date
+            if (!job.date) return false;
+            
+            const jobDate = parseDate(job.date);
+            if (!jobDate) return false;
+            
+            return jobDate >= currentDate;
+          });
+
+        setJobs(jobsList);
       } catch (error) {
         console.error('Error fetching jobs:', error);
+        setError('Failed to load jobs. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -58,8 +99,14 @@ const JobList = () => {
   }, []);
 
   if (loading) {
+    return <Loading />;
+  }
+
+  if (error) {
     return (
-      <Loading/>
+      <View style={styles.container}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
     );
   }
 
@@ -73,11 +120,11 @@ const JobList = () => {
             jobId={item.job_id}
             title={item.title}
             location={item.location}
-            date={item.date}
+            date={item.date || 'No Date'}
             time={item.time}
           />
         )}
-        ListEmptyComponent={<Text>No jobs found.</Text>}
+        ListEmptyComponent={<Text>No upcoming jobs found.</Text>}
       />
     </View>
   );
@@ -93,6 +140,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 20,
   },
 });
 

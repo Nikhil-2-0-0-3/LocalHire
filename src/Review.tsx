@@ -73,8 +73,11 @@ const Reviews = ({ route }) => {
   const [reviews, setReviews] = useState([]);
   const [sortOrder, setSortOrder] = useState("desc"); // "desc" (highest first), "asc" (lowest first)
   const user = route?.params?.user;
+  console.log('user',user)
 
   useEffect(() => {
+    console.log('enter the reviews')
+    
     if (user?.id) {
       fetchAverageRating(user.id);
       fetchUserReviews(user.id);
