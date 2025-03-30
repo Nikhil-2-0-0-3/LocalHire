@@ -1,26 +1,166 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, PermissionsAndroid, Platform } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
+import AudioRecord from 'react-native-audio-record';
+import RNFS from 'react-native-fs';
 
 const SearchBar = () => {
   const navigation = useNavigation();
   const [searchText, setSearchText] = useState('');
-  const [response, setResponse] = useState('');
-  const [error, setError] = useState('');
   const [recording, setRecording] = useState(false);
   const [dots, setDots] = useState('...');
-  const API_KEY = 'AIzaSyBpE4SoC4ostrQ8wL68-mYQc-5uhz10QQg'; // Replace with your actual API key
+  const API_KEY = 'AIzaSyBpE4SoC4ostrQ8wL68-mYQc-5uhz10QQg'; // Gemini API key
+  const SPEECH_API_KEY = 'AIzaSyBLUa9rx-mv7aJiUTiJH9d3OkFjt0irNlw'; // Replace with your actual key
 
-  // Function to validate the response format
-  const isValidResponseFormat = (responseText: string) => {
-    // Check if the response follows the format "tag:word"
-    const regex = /^\s*(\w+:\s*\w+\s*)+$/;
-    return regex.test(responseText);
+  // Audio configuration
+  const audioConfig = {
+    sampleRate: 16000,
+    channels: 1,
+    bitsPerSample: 16,
+    audioSource: 6,
+    wavFile: 'test.wav'
   };
 
-  // Function to perform NER using the API
+  const verifyAudioFile = async (filePath: string) => {
+    try {
+      const fileInfo = await RNFS.stat(filePath);
+      console.log('Audio file info:', {
+        size: fileInfo.size,
+        path: fileInfo.path,
+        lastModified: new Date(fileInfo.lastModified).toISOString()
+      });
+      
+      if (fileInfo.size === 0) {
+        Alert.alert('Error', 'Audio file is empty!');
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('File verification failed:', error);
+      return false;
+    }
+  };
+
+  // Initialize audio recording
+  useEffect(() => {
+    AudioRecord.init(audioConfig);
+    
+    AudioRecord.on('data', (data) => {
+      // You can handle real-time data here if needed
+    });
+
+    return () => {
+      AudioRecord.stop();
+    };
+  }, []);
+
+  // Request microphone permission
+  const requestMicrophonePermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+          {
+            title: 'Microphone Permission',
+            message: 'App needs access to your microphone for speech recognition',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          }
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.error('Permission error:', err);
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Start recording
+  const startRecording = async () => {
+    try {
+      const hasPermission = await requestMicrophonePermission();
+      if (!hasPermission) {
+        Alert.alert('Permission denied', 'Microphone permission is required');
+        return;
+      }
+
+      setRecording(true);
+      await AudioRecord.start();
+    } catch (err) {
+      console.error('Failed to start recording', err);
+      setRecording(false);
+    }
+  };
+
+  // Stop recording and send to Google Speech-to-Text
+  const stopRecording = async () => {
+    try {
+      setRecording(false);
+      const audioFile = await AudioRecord.stop();
+      const isValid = await verifyAudioFile(audioFile);
+      console.log(isValid, 'Audio file path:');
+      
+      const audioData = await RNFS.readFile(audioFile, 'base64');
+      const speechText = await recognizeSpeech(audioData);
+      
+      if (speechText) {
+        setSearchText(speechText);
+      }
+    } catch (err) {
+      console.error('Failed to stop recording', err);
+    }
+  };
+
+  // Recognize speech using Google Cloud Speech-to-Text
+  const recognizeSpeech = async (audioData: string) => {
+    try {
+      const payload = {
+        config: {
+          encoding: 'LINEAR16',
+          sampleRateHertz: 16000,
+          languageCode: 'en-US',
+        },
+        audio: {
+          content: audioData
+        }
+      };
+  
+      const response = await axios.post(
+        `https://speech.googleapis.com/v1/speech:recognize?key=${SPEECH_API_KEY}`,
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          timeout: 10000
+        }
+      );
+  
+      if (response.data.results && response.data.results[0]) {
+        return response.data.results[0].alternatives[0].transcript;
+      }
+      return null;
+    } catch (error) {
+      console.error('Speech recognition error:', error);
+      Alert.alert('Error', 'Failed to recognize speech');
+      return null;
+    }
+  };
+
+  // Toggle recording
+  const toggleRecording = async () => {
+    if (recording) {
+      await stopRecording();
+    } else {
+      await startRecording();
+    }
+  };
+
+  // Perform NER using Gemini API
   const performNER = async (inputText: string) => {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
   
@@ -41,54 +181,44 @@ const SearchBar = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 10000, // 10-second timeout
+        timeout: 10000,
       });
   
-      // Extract the response text
       const responseText = response.data?.candidates[0]?.content?.parts[0]?.text || 'No content in response';
-      setResponse(responseText);
-  
-      // Log the raw response for debugging
       console.log('API Response:', responseText);
-  
-      // Extract location, skill, salary, and rating from the response
-      //const locationMatch = responseText.match(/location:\s*([\w\s\-.,]+)/i);
-      const locationMatch = responseText.match(/location:\s*([\w\s\-.,]+?)(?=\s*job:|$)/i);
-      const jobMatch = responseText.match(/job:\s*([\w\s\-.,]+)/i);
+
+      // Improved entity extraction
+      const extractEntity = (text: string, tag: string) => {
+        const regex = new RegExp(`${tag}:\\s*([^\\n]+)`, 'i');
+        const match = text.match(regex);
+        return match ? match[1].trim() : '';
+      };
+
+      const location = extractEntity(responseText, 'location');
+      const skill = extractEntity(responseText, 'job');
       const salaryMatch = responseText.match(/min salary:\s*([\d,]+)/i);
       const ratingMatch = responseText.match(/min rating:\s*([\d.]+)/i);
-  
-      const location = locationMatch ? locationMatch[1].trim() : '';
-      const skill = jobMatch ? jobMatch[1].trim() : '';
-      const salary = salaryMatch ? parseInt(salaryMatch[1].replace(/,/g, ''), 10) : 0; // Remove commas from salary
+
+      const salary = salaryMatch ? parseInt(salaryMatch[1].replace(/,/g, ''), 10) : 0;
       const rating = ratingMatch ? parseFloat(ratingMatch[1]) : 0;
-  
-      // Log the extracted filters for debugging
+
       console.log('Extracted Filters:', { location, skill, salary, rating });
-  
-      setError(''); // Clear any previous errors
-  
-      // Validate the extracted filters
+
+      // Navigate with filters only if we have at least one valid filter
       if (location || skill || salary || rating) {
-        // Pass the extracted filters to the AllUsers screen
         navigation.navigate('AllUser', {
-          filters: { location, skill, rating },
+          filters: { 
+            location: location || undefined,
+            skill: skill || undefined,
+            rating: rating || undefined
+          },
         });
       } else {
-        Alert.alert('Error', 'No valid filters extracted from the response.');
+        Alert.alert('No Filters', 'Could not extract any filters from the search text');
       }
     } catch (error: any) {
-      // Handle errors
-      if (error.response) {
-        setError('Server Error: ' + error.response.data.error.message);
-      } else if (error.request) {
-        setError('Network Error: No response received from the server');
-      } else {
-        setError('Error: ' + error.message);
-      }
-  
-      setResponse('');
-      Alert.alert('Error', error.message || 'An error occurred while processing the request.');
+      console.error('Search error:', error);
+      Alert.alert('Error', error.message || 'Failed to process search');
     }
   };
 
@@ -104,14 +234,12 @@ const SearchBar = () => {
     } else {
       setDots('speak...');
     }
-
     return () => clearInterval(interval);
   }, [recording]);
 
   return (
     <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', width: '90%', margin: 'auto' }}>
       <View style={styles.searchBar}>
-        {/* Search Icon */}
         <TouchableOpacity
           onPress={async () => {
             if (searchText.trim()) {
@@ -124,7 +252,6 @@ const SearchBar = () => {
           <Icon name="search" size={20} color="#4335A7" />
         </TouchableOpacity>
 
-        {/* Search Input */}
         {recording ? (
           <Text style={styles.recordingText}>{dots}</Text>
         ) : (
@@ -141,9 +268,13 @@ const SearchBar = () => {
                 Alert.alert('Error', 'Please enter some text to search.');
               }
             }}
-            returnKeyType="search" // Changes the return key to say "Search" on iOS
+            returnKeyType="search"
           />
         )}
+        
+        <TouchableOpacity onPress={toggleRecording}>
+          <Icon name='microphone' size={20} color={recording ? 'red' : '#4335A7'} />
+        </TouchableOpacity>
       </View>
       <TouchableOpacity style={styles.filterContainer} onPress={() => navigation.navigate('FilterScreen')}>
         <View style={styles.filterBtn}>
@@ -155,11 +286,10 @@ const SearchBar = () => {
   );
 };
 
-// Styles
 const styles = StyleSheet.create({
   filterContainer: {
-    justifyContent: "center", // Centers vertically
-    alignItems: "flex-end", // Moves all items to the right
+    justifyContent: "center",
+    alignItems: "flex-end",
     paddingLeft: 10,
   },
   searchBar: {

@@ -23,7 +23,6 @@ const checkNotification = async () => {
 
     snapshot.forEach((childSnap) => {
         const notificationData = childSnap.val(); // Get the notification data
-        console.log(notificationData.btnActive)
         if (notificationData.btnActive === true) {
             hasActiveNotification = true; // Set to true if any notification has btnActive: true
         }
