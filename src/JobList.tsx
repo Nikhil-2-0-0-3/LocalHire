@@ -6,13 +6,15 @@ import JobCard from '../components/JobCard';
 import Loading from '../components/Loading';
 import NavBar from '../components/NavBar';
 import SearchBar from '../components/SearchBar';
+
 type Job = {
   job_id: string;
   title: string;
   location: string;
-  date?: string; // Make date optional since it might be undefined
+  date?: string;
   time: string;
   type: string;
+  no_of_users?: number; // Add no_of_users to the type
 };
 
 const JobList = () => {
@@ -20,7 +22,6 @@ const JobList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Safe date parsing with validation
   const parseDate = (dateString?: string): Date | null => {
     if (!dateString) return null;
     
@@ -40,7 +41,7 @@ const JobList = () => {
 
   const getCurrentDate = (): Date => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Normalize to start of day
+    today.setHours(0, 0, 0, 0);
     return today;
   };
 
@@ -70,9 +71,10 @@ const JobList = () => {
             job_id: key,
             title: jobsData[key].title || 'No Title',
             location: jobsData[key].location || 'No Location',
-            date: jobsData[key].date, // Might be undefined
+            date: jobsData[key].date,
             time: jobsData[key].time || 'No Time',
             type: jobsData[key].type || 'No Type',
+            no_of_users: jobsData[key].no_of_users || 0 // Default to 0 if undefined
           }))
           .filter((job) => {
             // Only process type B jobs
@@ -84,7 +86,8 @@ const JobList = () => {
             const jobDate = parseDate(job.date);
             if (!jobDate) return false;
             
-            return jobDate >= currentDate;
+            // Check if jobDate is in the future AND no_of_users > 0
+            return jobDate >= currentDate && (job.no_of_users || 0) > 0;
           });
 
         setJobs(jobsList);
@@ -118,7 +121,7 @@ const JobList = () => {
         <SearchBar />
       </View>
       <FlatList
-      style={{marginTop:30}}
+        style={{marginTop:30}}
         data={jobs}
         keyExtractor={(item) => item.job_id}
         renderItem={({ item }) => (
@@ -128,9 +131,10 @@ const JobList = () => {
             location={item.location}
             date={item.date || 'No Date'}
             time={item.time}
+            noOfUsers={item.no_of_users} // Pass no_of_users to JobCard if needed
           />
         )}
-        ListEmptyComponent={<Text>No upcoming jobs found.</Text>}
+        ListEmptyComponent={<Text>No available jobs found.</Text>}
       />
     </View>
   );

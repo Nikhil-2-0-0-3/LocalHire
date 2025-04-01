@@ -25,6 +25,13 @@ import FilterScreen from './src/FilterScreen.tsx';
 import FilteredJobs from './components/FilteredJobs.tsx';
 import ChangePassword from './src/changepassword.tsx';
 import WhatsAppScreen from './src/WhatsAppScreen.tsx';
+import ViewRev from './src/ViewRev.tsx';
+import Rev from './src/Rev.tsx';
+import NotificationDetails from './src/NotificationDetails.tsx';
+import AcceptedJobsScreen from './src/AcceptedJobsScreen.tsx';
+import PostedJobsScreen from './src/PostedJobScreen.tsx';
+
+
 // Request notification permissions
 const requestUserPermission = async () => {
   const authStatus = await messaging().requestPermission();
@@ -63,6 +70,11 @@ type RootStackParamList = {
   FilteredJobs:undefined;
   ChangeP:undefined;
   Wp:undefined;
+  R:undefined;
+  ReV:undefined;
+  NotificationDetails:undefined;
+  AcceptedJobsScreen:undefined;
+  PostedJobs:undefined;
 };
 
 // Define Props for HomeScreen
@@ -452,9 +464,16 @@ export default function App() {
         <Stack.Screen name="AllUser" component={AllUsers} />
         <Stack.Screen name="Reviews" component={Reviews} />
         <Stack.Screen name="Employeer1" component={Employeer} />
+        <Stack.Screen name="NotificationDetails" component={NotificationDetails} />
+        <Stack.Screen name="AcceptedJobsScreen" component={AcceptedJobsScreen} />
+        <Stack.Screen name="PostedJobs" component={PostedJobsScreen} />
+    
+
         <Stack.Screen name="home1" component={home} />
         <Stack.Screen name="user1" component={UserProfile} />
         <Stack.Screen name="ChangeP" component={ChangePassword} />
+       <Stack.Screen name="R" component={ViewRev}/>
+       <Stack.Screen name="ReV" component={Rev}/>
 
       </Stack.Navigator>
     </NavigationContainer>

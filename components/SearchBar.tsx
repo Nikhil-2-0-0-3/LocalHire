@@ -11,7 +11,7 @@ const SearchBar = () => {
   const [searchText, setSearchText] = useState('');
   const [recording, setRecording] = useState(false);
   const [dots, setDots] = useState('...');
-  const API_KEY = 'AIzaSyBpE4SoC4ostrQ8wL68-mYQc-5uhz10QQg'; // Gemini API key
+  const API_KEY = 'AIzaSyBpE4SoC4ostrQ8wL68-mYQc-5uhz10QQg'; 
   const SPEECH_API_KEY = 'AIzaSyBLUa9rx-mv7aJiUTiJH9d3OkFjt0irNlw'; // Replace with your actual key
 
   // Audio configuration
@@ -322,4 +322,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SearchBar;
+export default SearchBar; 

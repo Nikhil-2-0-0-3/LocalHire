@@ -23,11 +23,15 @@ const checkNotification = async () => {
 
     snapshot.forEach((childSnap) => {
         const notificationData = childSnap.val(); // Get the notification data
+        console.log(notificationData.btnActive);
         if (notificationData.btnActive === true) {
+            console.log('Active notification found:', notificationData);
             hasActiveNotification = true; // Set to true if any notification has btnActive: true
+            return true; // Exit the loop early
         }
+        return undefined; // Explicitly return undefined
     });
-    
+    console.log(hasActiveNotification)
 
     return hasActiveNotification; // Return true if at least one notification has btnActive: true
 };

@@ -5,24 +5,14 @@ import {
 import StarRating from "react-native-star-rating-widget";
 import { firebase } from "@react-native-firebase/database";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Icon from "react-native-vector-icons/FontAwesome";
 
-const SaveToDb = async (rating: number, feedback: string, userId: string, userName: string) => {
+const SaveToDb = async (rating: number, feedback: string, userId: string, reviewerName: string) => {
   try {
-    const uid = await AsyncStorage.getItem("userId");
-    const reviewerName = await AsyncStorage.getItem("userName"); 
-
-    if (!uid || !reviewerName) {
-      console.error("User ID or name not found");
-      return;
-    }
-
     const userData = {
       rating,
       feedback,
-      reviewedBy: uid,
+      reviewedBy: userId,
       reviewedByName: reviewerName,
-      reviewedUserName: userName,
       timestamp: Date.now(),
     };
 
@@ -30,7 +20,7 @@ const SaveToDb = async (rating: number, feedback: string, userId: string, userNa
       .app()
       .database("https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/");
     
-    const revID = `${uid}_${userData.timestamp}`;
+    const revID = `${userId}_${userData.timestamp}`;
 
     await db.ref(`users/${userId}/reviews/${revID}`).set(userData);
     console.log("Review saved successfully");
@@ -59,28 +49,37 @@ const updateAverageRating = async (userId: string) => {
     const totalRating = reviewList.reduce((sum, review: any) => sum + Number(review.rating), 0);
     const avgRating = totalRating / reviewList.length;
 
-    await db.ref(`users/${userId}/averageRating`).set(avgRating.toFixed(1));
+    await db.ref(`users/${userId}/averageRating`).set(avgRating.toFixed(1)); // Store only 1 decimal place
   } catch (error) {
     console.error("Error updating average rating:", error);
   }
 };
 
 const Reviews = ({ route }) => {
+  const { userId } = route?.params; // Only userId is passed through the route
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
-  const [averageRating, setAverageRating] = useState(0);
   const [reviews, setReviews] = useState([]);
-  const [sortOrder, setSortOrder] = useState("desc");
-  const [userSkills, setUserSkills] = useState<string[]>([]);
-  const user = route?.params?.user;
+  const [sortOrder, setSortOrder] = useState("desc"); // "desc" (highest first), "asc" (lowest first)
+  const [averageRating, setAverageRating] = useState(0);
+  const [reviewerName, setReviewerName] = useState(""); // Store logged-in user's name
 
   useEffect(() => {
-    if (user?.id) {
-      fetchAverageRating(user.id);
-      fetchUserReviews(user.id);
-      fetchUserSkills(user.id);
+    const fetchLoggedInUser = async () => {
+      const userName = await AsyncStorage.getItem("userName"); // Get logged-in user's name from AsyncStorage
+      if (userName) {
+        setReviewerName(userName);
+      } else {
+        console.error("Logged-in user name not found.");
+      }
+    };
+    fetchLoggedInUser();
+
+    if (userId) {
+      fetchAverageRating(userId);
+      fetchUserReviews(userId);
     }
-  }, [user, sortOrder]);
+  }, [userId, sortOrder]);
 
   const fetchAverageRating = async (userId: string) => {
     try {
@@ -100,26 +99,6 @@ const Reviews = ({ route }) => {
     }
   };
 
-  const fetchUserSkills = async (userId: string) => {
-    try {
-      const db = firebase
-        .app()
-        .database("https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/");
-
-      const snapshot = await db.ref(`users/${userId}/skills`).once("value");
-
-      if (snapshot.exists()) {
-        const skills = snapshot.val();
-        // Convert to array if it's not already one
-        setUserSkills(Array.isArray(skills) ? skills : [skills].filter(Boolean));
-      } else {
-        setUserSkills([]);
-      }
-    } catch (error) {
-      console.error("Error fetching user skills:", error);
-    }
-  };
-
   const fetchUserReviews = async (userId: string) => {
     try {
       const db = firebase
@@ -131,6 +110,7 @@ const Reviews = ({ route }) => {
       if (snapshot.exists()) {
         let reviewsArray = Object.values(snapshot.val());
 
+        // Sort reviews based on selected order
         reviewsArray.sort((a: any, b: any) => 
           sortOrder === "asc" ? a.rating - b.rating : b.rating - a.rating
         );
@@ -144,7 +124,7 @@ const Reviews = ({ route }) => {
     }
   };
 
-  if (!user || !user.id) {
+  if (!userId) {
     return (
       <View style={styles.container}>
         <Text style={styles.errorText}>Error: No user data found.</Text>
@@ -158,42 +138,19 @@ const Reviews = ({ route }) => {
       return;
     }
 
-    await SaveToDb(rating, feedback, user.id, user.name);
+    await SaveToDb(rating, feedback, userId, reviewerName);
 
     Alert.alert("Review Submitted", "Thank you for your feedback!");
     setRating(0);
     setFeedback("");
 
-    fetchUserReviews(user.id);
-    fetchAverageRating(user.id);
+    fetchUserReviews(userId);
+    fetchAverageRating(userId);
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>User Profile</Text>
-
-      <View style={styles.card}>
-        <Icon name="user" size={50} color="#4335A7" style={{ marginBottom: 10 }} />
-        <Text style={styles.info}>Name: {user.name}</Text>
-        <Text style={styles.info}>Location: {user.location}</Text>
-        
-        {/* Display user skills */}
-        {userSkills.length > 0 && (
-          <View style={styles.skillsContainer}>
-            <Text style={styles.skillsTitle}>Skills:</Text>
-            <View style={styles.skillsList}>
-              {userSkills.map((skill, index) => (
-                <Text key={index} style={styles.skillItem}>
-                  {skill}
-                  {index < userSkills.length - 1 ? ', ' : ''}
-                </Text>
-              ))}
-            </View>
-          </View>
-        )}
-        
-        <Text style={styles.avgRating}>Average Rating: {averageRating.toFixed(1)}</Text>
-      </View>
+      <Text style={styles.header}>Employee Review</Text>
 
       <Text style={styles.label}>Rating:</Text>
       <StarRating rating={rating} onChange={setRating} starSize={30} color="#f39c12" />
@@ -244,15 +201,6 @@ const Reviews = ({ route }) => {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#f4f4f4" },
   header: { fontSize: 22, fontWeight: "bold", marginBottom: 20, textAlign: "center" },
-  card: { 
-    backgroundColor: "#fff", 
-    padding: 15, 
-    borderRadius: 8, 
-    marginBottom: 20, 
-    elevation: 3 
-  },
-  info: { fontSize: 16, marginBottom: 5 },
-  avgRating: { fontSize: 18, fontWeight: "bold", marginTop: 10, color: "#f39c12" },
   label: { fontSize: 16, fontWeight: "bold", marginTop: 10, marginBottom: 5 },
   textInput: {
     backgroundColor: "#fff",
@@ -292,23 +240,6 @@ const styles = StyleSheet.create({
   reviewText: { fontSize: 16, marginVertical: 5 },
   timestamp: { fontSize: 12, color: "#777" },
   errorText: { fontSize: 18, color: "red", textAlign: "center", marginTop: 20 },
-  skillsContainer: {
-    marginTop: 5,
-    marginBottom: 10,
-  },
-  skillsTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 3,
-  },
-  skillsList: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  skillItem: {
-    fontSize: 14,
-    color: "#555",
-  },
 });
 
 export default Reviews;

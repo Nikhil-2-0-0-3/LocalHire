@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, SafeAreaView } from "react-native";
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, SafeAreaView, Image } from "react-native";
 import { firebase } from "@react-native-firebase/database";
 import Icon2 from "react-native-vector-icons/EvilIcons";
 import Icon from "react-native-vector-icons/FontAwesome";
@@ -16,6 +16,7 @@ type User = {
   location: string;
   job: string[]; // Array of skills
   rating: number;
+  profileImage?: string;
 };
 
 type Filters = {
@@ -65,6 +66,8 @@ const AllUsers = () => {
             location: userData[key].location || "Unknown",
             job: userData[key].skills || [], // Default to empty array if skills are missing
             rating: parseFloat(userData[key].rating) || 0, // Convert rating to number
+            profileImage: userData[key].profileImage || null, 
+
           }));
 
           setUsers(userList); // Set all users
@@ -127,7 +130,11 @@ const AllUsers = () => {
           renderItem={({ item }) => (
             <View style={styles.cardContainer}>
               <View style={styles.card}>
-                <Icon name="user-circle" size={30} color="#1294FF" style={styles.icon} />
+              {item.profileImage ? (
+                  <Image source={{ uri: item.profileImage }} style={styles.profileImage} />
+                ) : (
+                  <Icon name="user-circle" size={30} color="#1294FF" style={styles.icon} />
+                )}
                 <View style={styles.c2}>
                   <Text style={styles.name}>{item.name}</Text>
                   <View style={styles.loc}>
@@ -167,6 +174,12 @@ const AllUsers = () => {
 };
 
 const styles = StyleSheet.create({
+  profileImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+  },
   btnContainer: {
     flex: 1,
     flexDirection: 'row',

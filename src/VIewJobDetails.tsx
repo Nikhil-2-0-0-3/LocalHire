@@ -1,50 +1,35 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  Animated,
+  SafeAreaView,
+  Alert
+} from 'react-native';
 import { firebase } from '@react-native-firebase/database';
-import Loading from '../components/Loading';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-type JobDetails = {
-  job_id: string;
-  title: string;
-  description: string;
-  location: string;
-  date: string;
-  time: string;
-  budget: number;
-  duration: string;
-  contact_info: string;
-  job_type: string;
-  senderUid: string;
-};
-
-type Notification = {
-  jobId: string;
-  type: string;
-  btnActive: string;
-  senderUid:string;
-  // You can add more fields like timestamp if needed
-};
-
-const ViewJobDetails = ({ route }: any) => {
+const ViewJobDetails = ({ route }) => {
   const { jobId } = route.params;
-  
-  const [job, setJob] = useState<JobDetails | null>(null);
+  const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
+  const fadeAnim = useState(new Animated.Value(0))[0];
 
   useEffect(() => {
     const fetchJobDetails = async () => {
       try {
-        const db = firebase.app().database('https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/');
-        const jobRef = db.ref(`Jobs/${jobId}`);
+        const db = firebase
+          .app()
+          .database('https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/');
 
-        const snapshot = await jobRef.once('value');
+        const snapshot = await db.ref(`Jobs/${jobId}`).once('value');
+        
         if (snapshot.exists()) {
-          const jobData = snapshot.val();
-          console.log('enter');
-          console.log(jobData.senderUid);
-          setJob(jobData);
+          setJob(snapshot.val());
         }
       } catch (error) {
         console.error('Error fetching job details:', error);
@@ -54,29 +39,34 @@ const ViewJobDetails = ({ route }: any) => {
     };
 
     fetchJobDetails();
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
   }, [jobId]);
 
   const handleApply = async () => {
     if (!job || !job.senderUid) return;
-    
     setApplying(true);
+    
     try {
       const db = firebase.app().database('https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/');
       const notificationRef = db.ref(`users/${job.senderUid}/notifications`).push();
-      const uid=await AsyncStorage.getItem('userId')|| 'none'
+      const uid = await AsyncStorage.getItem('userId') || 'none';
       
-      const newNotification: Notification = {
-        jobId: jobId,
-        type: 'B',
-        btnActive: 'true',
-        senderUid:uid,
-      };
+      await notificationRef.set({ 
+        jobId, 
+        type: 'B', 
+        btnActive: true, 
+        senderUid: uid,
+        job_type: job.job_type
+      });
       
-      await notificationRef.set(newNotification);
-      alert('Application submitted successfully!');
+      Alert.alert('Success', 'Application submitted successfully!');
     } catch (error) {
       console.error('Error applying for job:', error);
-      alert('Failed to apply. Please try again.');
+      Alert.alert('Error', 'Failed to apply. Please try again.');
     } finally {
       setApplying(false);
     }
@@ -84,81 +74,218 @@ const ViewJobDetails = ({ route }: any) => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <Loading/>
-      </View>
+      <SafeAreaView style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Loading job details...</Text>
+      </SafeAreaView>
     );
   }
 
   if (!job) {
     return (
-      <View style={styles.container}>
-        <Text>Job not found.</Text>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.errorText}>Job details not found</Text>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{job.job_type}</Text>
-      <Text style={styles.detail}>📍 {job.location}</Text>
-      <Text style={styles.detail}>📅 {job.date}</Text>
-      <Text style={styles.detail}>⏰ {job.time}</Text>
-      <Text style={styles.detail}>💰 Budget: ${job.budget}</Text>
-      <Text style={styles.detail}>⏳ Duration: {job.duration}</Text>
-      <Text style={styles.detail}>📞 Contact: {job.contact_info}</Text>
-      
-      <TouchableOpacity 
-        style={styles.applyButton} 
-        onPress={handleApply}
-        disabled={applying}
-      >
-        <Text style={styles.applyButtonText}>
-          {applying ? 'Applying...' : 'Apply'}
-        </Text>
-      </TouchableOpacity>
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+        <View style={styles.stripeBackground} />
+        
+        <View style={styles.card}>
+          <Icon 
+            name="work-outline" 
+            size={40} 
+            color="#4335A7" 
+            style={styles.headerIcon} 
+          />
+          <Text style={styles.title}>{job.job_type}</Text>
+          
+          <View style={styles.detailsContainer}>
+            {/* Location */}
+            <Text style={styles.detailLabel}>Location</Text>
+            <View style={styles.detailRow}>
+              <Icon name="location-on" size={24} color="#4335A7" />
+              <Text style={styles.detailText}>{job.location}</Text>
+            </View>
+            
+            {/* Address */}
+            {job.address && (
+              <>
+                <Text style={styles.detailLabel}>Address</Text>
+                <View style={styles.detailRow}>
+                  <Icon name="home" size={24} color="#4335A7" />
+                  <Text style={styles.detailText}>{job.address}</Text>
+                </View>
+              </>
+            )}
+            
+            {/* Date */}
+            <Text style={styles.detailLabel}>Date</Text>
+            <View style={styles.detailRow}>
+              <Icon name="event" size={24} color="#4335A7" />
+              <Text style={styles.detailText}>{job.date}</Text>
+            </View>
+            
+            {/* Time */}
+            {job.time && (
+              <>
+                <Text style={styles.detailLabel}>Time</Text>
+                <View style={styles.detailRow}>
+                  <Icon name="access-time" size={24} color="#4335A7" />
+                  <Text style={styles.detailText}>{job.time}</Text>
+                </View>
+              </>
+            )}
+            
+            {/* Budget */}
+            {job.budget && (
+              <>
+                <Text style={styles.detailLabel}>Budget</Text>
+                <View style={styles.detailRow}>
+                  <Icon name="currency-rupee" size={24} color="#4335A7" />
+                  <Text style={styles.detailText}>₹{job.budget}</Text>
+                </View>
+              </>
+            )}
+            
+            {/* Duration */}
+            {job.duration && (
+              <>
+                <Text style={styles.detailLabel}>Duration</Text>
+                <View style={styles.detailRow}>
+                  <Icon name="hourglass-full" size={24} color="#4335A7" />
+                  <Text style={styles.detailText}>{job.duration}</Text>
+                </View>
+              </>
+            )}
+            
+            {/* Contact Info */}
+            {job.contact_info && (
+              <>
+                <Text style={styles.detailLabel}>Contact Information</Text>
+                <View style={styles.detailRow}>
+                  <Icon name="contact-phone" size={24} color="#4335A7" />
+                  <Text style={styles.detailText}>{job.contact_info}</Text>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+
+        <TouchableOpacity 
+          style={[styles.actionButton, applying && styles.buttonDisabled]} 
+          onPress={handleApply}
+          disabled={applying}
+        >
+          <Icon 
+            name={applying ? "hourglass-top" : "send"} 
+            size={20} 
+            color="white" 
+          />
+          <Text style={styles.actionButtonText}>
+            {applying ? 'Applying...' : 'Apply for Job'}
+          </Text>
+        </TouchableOpacity>
+      </Animated.View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f4f4f4',
+  },
   container: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
-    backgroundColor: '#f8f8f8',
+  },
+  stripeBackground: {
+    position: 'absolute',
+    width: '150%',
+    height: '150%',
+    backgroundColor: '#4335A7',
+    transform: [{ rotate: '45deg' }],
+    opacity: 0.1,
+  },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    elevation: 3,
+    width: '90%',
+    borderWidth: 0,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  headerIcon: {
+    marginBottom: 15,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 15,
+  },
+  detailsContainer: {
+    width: '100%',
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: '#777',
+    marginTop: 10,
+    marginBottom: 2,
+    paddingHorizontal: 10,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  detailText: {
+    fontSize: 16,
+    color: '#555',
+    marginLeft: 15,
+    flex: 1,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4335A7',
+    padding: 12,
+    borderRadius: 5,
+    elevation: 3,
+    width: '90%',
+  },
+  buttonDisabled: {
+    backgroundColor: '#7c6fcf',
+  },
+  actionButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 10,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#f4f4f4',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1294FF',
-    marginBottom: 10,
-  },
-  detail: {
+  loadingText: {
     fontSize: 16,
     color: '#555',
-    marginBottom: 5,
   },
-  description: {
-    fontSize: 14,
-    color: '#333',
-    marginTop: 10,
-  },
-  applyButton: {
-    backgroundColor: '#1294FF',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  applyButtonText: {
-    color: 'white',
+  errorText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    color: '#ff4444',
+    textAlign: 'center',
   },
 });
 

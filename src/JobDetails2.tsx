@@ -8,33 +8,30 @@ import { Formik } from 'formik';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { firebase } from '@react-native-firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import messaging from '@react-native-firebase/messaging';
 import uuid from 'react-native-uuid';
 
 interface FormValues {
   job_id: string;
   job_type: string;
-  title: string;
-  description: string;
+  address: string;
   location: string;
   date: Date | null;
   time: string;
   budget: number;
-  duration: string;
-  contact_info: string;
+  no_of_users: number | string; // Allow string for empty input
   senderUid: string;
   status: string;
   created_at: number;
+  users_hired:number;
 }
 
 const generateJobId = async () => {
-  const uid = await AsyncStorage.getItem('userId'); // Get the user's UID
-  const timestamp = Date.now(); // Get current timestamp
-  const randomString = uuid.v4().split('-')[0]; // Generate a short unique string
-  return `${uid}_${timestamp}_${randomString}`; // Concatenated unique job ID
+  const uid = await AsyncStorage.getItem('userId');
+  const timestamp = Date.now();
+  const randomString = uuid.v4().split('-')[0];
+  return `${uid}_${timestamp}_${randomString}`;
 };
 
-// Function to format date as "dd/mm/yyyy"
 const formatDate = (date: Date): string => {
   const day = date.getDate().toString().padStart(2, '0');
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -42,88 +39,49 @@ const formatDate = (date: Date): string => {
   return `${day}/${month}/${year}`;
 };
 
-// Save to database
 const SaveToDb = async (values: FormValues) => {
   try {
-    const receiverUid = await AsyncStorage.getItem('receiver_id');
     const uid = await AsyncStorage.getItem('userId');
     if (!uid) {
       console.error("User ID not found");
       return;
     }
 
-    const jobId = values.job_id;
+    // Ensure no_of_users is a number
+    const noOfUsers = typeof values.no_of_users === 'string' ? 1 : values.no_of_users;
 
-    // Convert the Date object to a string
+    const jobId = await generateJobId();
     const formattedDate = values.date ? formatDate(values.date) : null;
 
     const userData = {
       job_id: jobId,
       job_type: values.job_type,
-      title: values.title,
-      description: values.description,
+      address: values.address,
       location: values.location,
       date: formattedDate,
       time: values.time,
       budget: values.budget,
-      duration: values.duration,
-      contact_info: values.contact_info,
+      no_of_users: noOfUsers,
       senderUid: uid,
       status: 'open',
-      created_at: values.created_at,
-      type:'B'
+      created_at: Date.now(),
+      type: 'B',
+      users_hired:0,
     };
 
     const db = firebase.app().database('https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/');
-
-    // Save job details in Jobs node
     await db.ref(`Jobs/${jobId}`).set(userData);
-
-    // Save job ID in sender's JobsPosted node
     await db.ref(`users/${uid}/JobsPosted/${jobId}`).set(true);
 
-    // Save notification in receiver's notifications node
+    Alert.alert('Success', 'Job posted successfully!');
   } catch (error) {
     console.error("Error saving job:", error);
-  }
-};
-
-// Function to send a notification
-const sendNotification = async (receiverFcmToken: string, jobDetails) => {
-  const message = {
-    token: receiverFcmToken,
-    notification: {
-      title: 'New Job Assigned!',
-      body: `You have been assigned a new job: ${jobDetails.job_type}`,
-    },
-    data: {
-      jobId: jobDetails.job_id,
-      jobType: jobDetails.job_type,
-      location: jobDetails.location,
-    },
-    fcmOptions: {
-      // Add FCM options here (optional)
-      analyticsLabel: 'job_assignment', // Example analytics label
-    },
-  };
-
-  try {
-    await messaging().sendMessage(message);
-    console.log('Notification sent successfully:');
-  } catch (error) {
-    console.error('Error sending notification:', error);
+    Alert.alert('Error', 'Failed to post job');
   }
 };
 
 export default function JobDetails2() {
   const [showDatePicker, setShowDatePicker] = useState(false);
-
-  const handleDateChange = (event, selectedDate) => {
-    setShowDatePicker(false); // Hide the date picker
-    if (selectedDate) {
-      setFieldValue('date', selectedDate); // Update the form value
-    }
-  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -134,14 +92,12 @@ export default function JobDetails2() {
               initialValues={{
                 job_id: '',
                 job_type: '',
-                title: '',
-                description: '',
+                address: '',
                 location: '',
                 date: null,
                 time: '',
                 budget: 0,
-                duration: '',
-                contact_info: '',
+                no_of_users: 1,
                 senderUid: '',
                 status: 'open',
                 created_at: Date.now(),
@@ -150,22 +106,21 @@ export default function JobDetails2() {
                 const errors: Partial<Record<keyof FormValues, string>> = {};
 
                 if (!values.job_type) errors.job_type = 'Job type is required';
-                if (!values.title) errors.title = 'Title is required';
-                if (!values.description) errors.description = 'Description is required';
+                if (!values.address) errors.address = 'Address is required';
                 if (!values.location) errors.location = 'Location is required';
                 if (!values.date) errors.date = 'Date is required';
                 if (!values.time) errors.time = 'Time is required';
                 if (!values.budget || values.budget <= 0) errors.budget = 'Valid budget is required';
-                if (!values.duration) errors.duration = 'Duration is required';
-                if (!values.contact_info) errors.contact_info = 'Contact info is required';
 
                 return errors;
               }}
               onSubmit={async (values, { resetForm }) => {
-                values.job_id = await generateJobId();
-                values.senderUid = await AsyncStorage.getItem('userId');
-                values.created_at = Date.now();
-                await SaveToDb(values);
+                // Convert no_of_users to number if it's a string
+                const submissionValues = {
+                  ...values,
+                  no_of_users: typeof values.no_of_users === 'string' ? 1 : values.no_of_users
+                };
+                await SaveToDb(submissionValues);
                 resetForm();
               }}
             >
@@ -181,20 +136,6 @@ export default function JobDetails2() {
                 <View>
                   <Text style={styles.head}>Job Details</Text>
 
-                  {/* Job Title Input */}
-                  <View style={styles.unit}>
-                    <Text>Job Title:</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Job Title"
-                      placeholderTextColor="#888"
-                      onChangeText={handleChange('title')}
-                      onBlur={handleBlur('title')}
-                      value={values.title}
-                    />
-                    {errors.title && touched.title && <Text style={styles.error}>{errors.title}</Text>}
-                  </View>
-
                   {/* Job Type Input */}
                   <View style={styles.unit}>
                     <Text>Job Type:</Text>
@@ -209,27 +150,27 @@ export default function JobDetails2() {
                     {errors.job_type && touched.job_type && <Text style={styles.error}>{errors.job_type}</Text>}
                   </View>
 
-                  {/* Job Description Input */}
+                  {/* Address Input */}
                   <View style={styles.unit}>
-                    <Text>Job Description:</Text>
+                    <Text>Address:</Text>
                     <TextInput
-                      style={[styles.input, { height: 100 }]}
-                      placeholder="Describe the job..."
+                      style={[styles.input, { height: 80 }]}
+                      placeholder="Full address of the job location"
                       placeholderTextColor="#888"
                       multiline
-                      onChangeText={handleChange('description')}
-                      onBlur={handleBlur('description')}
-                      value={values.description}
+                      onChangeText={handleChange('address')}
+                      onBlur={handleBlur('address')}
+                      value={values.address}
                     />
-                    {errors.description && touched.description && <Text style={styles.error}>{errors.description}</Text>}
+                    {errors.address && touched.address && <Text style={styles.error}>{errors.address}</Text>}
                   </View>
 
-                  {/* Location Input */}
+                  {/* Location (Area) Input */}
                   <View style={styles.unit}>
-                    <Text>Location:</Text>
+                    <Text>Area/Location:</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="Location"
+                      placeholder="Eg. Downtown, Suburb name"
                       placeholderTextColor="#888"
                       onChangeText={handleChange('location')}
                       onBlur={handleBlur('location')}
@@ -284,7 +225,7 @@ export default function JobDetails2() {
                     <Text>Budget:</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="Eg. $50 - $100"
+                      placeholder="Amount in dollars"
                       placeholderTextColor="#888"
                       onChangeText={(text) => {
                         const budget = parseFloat(text);
@@ -297,32 +238,31 @@ export default function JobDetails2() {
                     {errors.budget && touched.budget && <Text style={styles.error}>{errors.budget}</Text>}
                   </View>
 
-                  {/* Duration Input */}
+                  {/* Number of Users Input - Fixed Version */}
                   <View style={styles.unit}>
-                    <Text>Duration:</Text>
+                    <Text>Number of Workers Needed:</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="Eg. 1-2 hours"
+                      placeholder="Enter number"
                       placeholderTextColor="#888"
-                      onChangeText={handleChange('duration')}
-                      onBlur={handleBlur('duration')}
-                      value={values.duration}
+                      value={typeof values.no_of_users === 'string' ? values.no_of_users : values.no_of_users.toString()}
+                      onChangeText={(text) => {
+                        if (text === '') {
+                          setFieldValue('no_of_users', '');
+                        } else {
+                          const num = parseInt(text);
+                          if (!isNaN(num)) {
+                            setFieldValue('no_of_users', num);
+                          }
+                        }
+                      }}
+                      onBlur={() => {
+                        if (values.no_of_users === '') {
+                          setFieldValue('no_of_users', 1);
+                        }
+                      }}
+                      keyboardType="numeric"
                     />
-                    {errors.duration && touched.duration && <Text style={styles.error}>{errors.duration}</Text>}
-                  </View>
-
-                  {/* Contact Info Input */}
-                  <View style={styles.unit}>
-                    <Text>Contact Info:</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Eg. 555-1234 or john.doe@example.com"
-                      placeholderTextColor="#888"
-                      onChangeText={handleChange('contact_info')}
-                      onBlur={handleBlur('contact_info')}
-                      value={values.contact_info}
-                    />
-                    {errors.contact_info && touched.contact_info && <Text style={styles.error}>{errors.contact_info}</Text>}
                   </View>
 
                   {/* Submit Button */}
@@ -349,40 +289,43 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     flexGrow: 1,
-    justifyContent: 'center', // Center the content vertically
+    justifyContent: 'center',
   },
   container: {
     padding: 20,
   },
   unit: {
-    marginBottom: 10,
+    marginBottom: 15,
   },
   head: {
     color: 'black',
     fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 15,
+    marginBottom: 20,
   },
   input: {
     color: 'black',
     borderWidth: 1,
-    borderRadius: 10,
-    padding: 10,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
     marginTop: 5,
+    fontSize: 16,
   },
   error: {
     color: 'red',
     fontSize: 12,
+    marginTop: 5,
   },
   btn: {
-    backgroundColor: '#1294FF',
-    width: '80%',
-    height: 40,
+    backgroundColor: '#4335A7',
+    width: '100%',
+    height: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 6,
-    alignSelf: 'center',
+    borderRadius: 8,
     marginTop: 20,
+    padding: 10,
   },
 });

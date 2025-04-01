@@ -33,6 +33,7 @@ const EmployeePg2 = ({ navigation }) => {
       const userCredential = await auth().createUserWithEmailAndPassword(email, password);
       const user = userCredential.user;
       const fcmToken = await messaging().getToken();
+      const role_of_user= await AsyncStorage.getItem('role')
 
       const userData = {
         uid: user.uid,
@@ -43,6 +44,7 @@ const EmployeePg2 = ({ navigation }) => {
         dob: dob.toISOString(), // Convert date to string
         location,
         gender,
+        role: role_of_user,
       };
 
       // Save user data to Firebase Realtime Database
