@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, SafeAreaView } from "react-native";
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, SafeAreaView, Image } from "react-native";
 import { firebase } from "@react-native-firebase/database";
 import Icon from "react-native-vector-icons/FontAwesome";
 import Icon2 from "react-native-vector-icons/EvilIcons";
@@ -9,9 +9,10 @@ import { StackNavigationProp } from '@react-navigation/stack';
 
 type RootStackParamList = {
   JobDetails: undefined;
-  AllUser:undefined; // Define the route and its parameters (if any)
-  // Add other routes here
+  AllUser: undefined;
+  Reviews: { user: User };
 };
+
 type JobDetails2ScreenNavigationProp = StackNavigationProp<RootStackParamList, "JobDetails">;
 type AllUserScreenNavigationProp = StackNavigationProp<RootStackParamList, "AllUser">;
 
@@ -22,11 +23,11 @@ type User = {
   location: string;
   job: string;
   rating: number;
+  profileImage?: string; // New field for profile image
 };
 
 const TopEmployees = () => {
-  const [topUsers, setTopUsers] = useState<User[]>([]); // Apply type here
-  const [searchQuery, setSearchQuery] = useState(""); // State for search query
+  const [topUsers, setTopUsers] = useState<User[]>([]);
   const navigation = useNavigation<JobDetails2ScreenNavigationProp | AllUserScreenNavigationProp>();
 
   useEffect(() => {
@@ -40,14 +41,14 @@ const TopEmployees = () => {
         if (snapshot.exists()) {
           const userData = snapshot.val();
           const userList: User[] = Object.keys(userData).map((key) => ({
-            id: key, // Firebase UID
+            id: key,
             name: userData[key].name || "N/A",
             location: userData[key].location || "Unknown",
             job: userData[key].skills || "Not specified",
-            rating: parseFloat(userData[key].rating) || 0, // Convert rating to number
+            rating: parseFloat(userData[key].rating) || 0,
+            profileImage: userData[key].profileImage || null, // Fetch profile image if available
           }));
 
-          // Sort users by rating in descending order and get top 3
           const sortedUsers = userList.sort((a, b) => b.rating - a.rating).slice(0, 3);
           setTopUsers(sortedUsers);
         }
@@ -57,20 +58,12 @@ const TopEmployees = () => {
     fetchUsers();
   }, []);
 
-  // Filter users based on search query
-  const filteredUsers = topUsers.filter((user) =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   const handleHire = async (id: string) => {
     try {
       if (id) {
         await AsyncStorage.setItem("receiver_id", id);
-        console.log("reciever_id:", id);
-      } else {
-        console.warn("No id available");
       }
-      navigation.navigate("JobDetails"); // Navigate after storing token
+      navigation.navigate("JobDetails");
     } catch (error) {
       console.error("Error saving FCM Token:", error);
     }
@@ -78,16 +71,19 @@ const TopEmployees = () => {
 
   return (
     <SafeAreaView style={styles.container1}>
-      
       <View style={styles.container}>
         <Text style={styles.heading}>Top Rated Employees</Text>
         <FlatList
-          data={filteredUsers}
+          data={topUsers}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={styles.cardContainer}>
               <View style={styles.card}>
-                <Icon name="user-circle" size={30} color="#FF7F3E" style={styles.icon} />
+                {item.profileImage ? (
+                  <Image source={{ uri: item.profileImage }} style={styles.profileImage} />
+                ) : (
+                  <Icon name="user-circle" size={40} color="#FF7F3E" style={styles.icon} />
+                )}
                 <View style={styles.c2}>
                   <Text style={styles.name}>{item.name}</Text>
                   <View style={styles.loc}>
@@ -97,16 +93,13 @@ const TopEmployees = () => {
                 </View>
                 <View style={styles.c3}>
                   <Text style={styles.skills}>
-                    Skills:{" "}
-                    {Array.isArray(item.job)
-                      ? item.job.join(", ")
-                      : String(item.job).replace(/\s*,\s*/g, ", ")}
+                    Skills: {Array.isArray(item.job) ? item.job.join(", ") : String(item.job)}
                   </Text>
                   <Text>⭐ {item.rating}</Text>
                 </View>
               </View>
               <View style={styles.btnContainer}>
-                <TouchableOpacity style={styles.btn}>
+                <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('Reviews', { user: item })}>
                   <Text style={{ color: 'white' }}>Profile</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.btn} onPress={() => handleHire(item.id)}>
@@ -116,10 +109,7 @@ const TopEmployees = () => {
             </View>
           )}
         />
-        <TouchableOpacity
-          style={styles.seeMoreBtn}
-          onPress={() => navigation.navigate("AllUser")}
-        >
+        <TouchableOpacity style={styles.seeMoreBtn} onPress={() => navigation.navigate("AllUser")}>
           <Text style={styles.seeMoreTxt}>See More</Text>
         </TouchableOpacity>
       </View>
@@ -145,13 +135,21 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     backgroundColor: "#f8f8f8",
     elevation: 5,
+    borderRadius: 10,
+    overflow: "hidden",
   },
   card: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#f8f8f8",
-    borderRadius: 4,
+    borderRadius: 10,
     padding: 15,
+  },
+  profileImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 10,
   },
   icon: {
     marginRight: 10,
@@ -161,7 +159,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   c3: {
-    width: "40%", // Fixed width to prevent sliding
+    width: "40%",
     justifyContent: "center",
     alignItems: "flex-start",
   },
@@ -175,36 +173,31 @@ const styles = StyleSheet.create({
   },
   skills: {
     flexWrap: "wrap",
-    flexShrink: 1, // Allows text to wrap properly
+    flexShrink: 1,
   },
   btnContainer: {
-    flex: 1,
     flexDirection: "row",
-    height: 40,
+    justifyContent: "space-between",
+    paddingHorizontal: 10,
+    marginVertical: 10,
   },
   btn: {
-    width: "20%",
-    height: 25,
-    alignItems: "center",
-    justifyContent: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     backgroundColor: "#1294FF",
-    borderWidth: 0,
-    borderColor: "#000000",
-    borderRadius: 25,
-    margin: "auto",
+    borderRadius: 20,
   },
   seeMoreBtn: {
-    width: "30%",
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#1294FF",
-    borderRadius: 25,
-    margin: "auto",
+    alignSelf: "center",
     marginTop: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: "#1294FF",
+    borderRadius: 20,
   },
   seeMoreTxt: {
     color: "white",
+    fontWeight: "bold",
   },
 });
 

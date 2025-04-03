@@ -327,7 +327,7 @@ const NotificationsScreen = ({ navigation }) => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View >
         <Loading />
       </View>
     );

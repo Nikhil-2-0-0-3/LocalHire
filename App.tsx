@@ -141,7 +141,7 @@ const DetailsScreen = ({ navigation }: EmpScreenProps) => {
         >
           Select your role
         </Text>
-        <View>
+        <View style={{ marginTop:'-10%'}}>
         <TouchableOpacity
           style={styles.leftbtn}
           onPress={() => {
@@ -531,9 +531,9 @@ const styles = StyleSheet.create({
        
   },
   bike:{
-    top:-50,
+    top:'0%',
     borderRadius:25,
-    height:1000,
+    height:'90%',
     backgroundColor:'#FFFF',
    
   },

@@ -105,9 +105,7 @@ const FilteredJobs = () => {
     fetchJobs();
   }, []);
 
-  if (loading) {
-    return <Loading />;
-  }
+  
 
   if (error) {
     return (

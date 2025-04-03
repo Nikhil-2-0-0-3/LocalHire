@@ -11,6 +11,7 @@ import { Picker } from '@react-native-picker/picker';
 import messaging from '@react-native-firebase/messaging';
 import { firebase } from '@react-native-firebase/database';
 import * as ImagePicker from 'react-native-image-picker';
+import storage from '@react-native-firebase/storage';
 
 
 PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
@@ -21,62 +22,74 @@ const EmployeePg2 = ({ navigation }) => {
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const pickImageFromGallery = (setFieldValue) => {
+  const pickImageFromGallery = async (setFieldValue) => {
     const options = { mediaType: 'photo', quality: 1 };
-
-    ImagePicker.launchImageLibrary(options, (response) => {
+  
+    ImagePicker.launchImageLibrary(options, async (response) => {
       if (response.didCancel) {
         console.log("User cancelled image picker");
       } else if (response.errorMessage) {
         console.log("ImagePicker Error: ", response.errorMessage);
       } else if (response.assets && response.assets.length > 0) {
-        setFieldValue("profileImage", response.assets[0].uri);
+        const imageUri = response.assets[0].uri;
+        const filename = imageUri.substring(imageUri.lastIndexOf('/') + 1);
+        
+        try {
+          const reference = storage().ref(`profileImages/${filename}`);
+          await reference.putFile(imageUri);
+          const downloadURL = await reference.getDownloadURL();
+  
+          setFieldValue("profileImage", downloadURL); // Store the URL in the form
+        } catch (error) {
+          console.error("Image upload failed:", error);
+          Alert.alert("Upload Error", "Failed to upload image. Please try again.");
+        }
       }
     });
   };
-
+  
   // Handle SignUp with Formik
   const handleSignUp = async (values) => {
-    const { email, password, confirmPassword, name, phone, dob, location, gender , profileImage } = values;
-
+    const { email, password, confirmPassword, name, phone, dob, location, gender, profileImage } = values;
+  
     if (password !== confirmPassword) {
       Alert.alert('Passwords do not match', 'Please ensure both passwords are the same.');
       return;
     }
-
+  
     try {
       const userCredential = await auth().createUserWithEmailAndPassword(email, password);
       const user = userCredential.user;
       const fcmToken = await messaging().getToken();
-
+  
       const userData = {
         uid: user.uid,
         name,
         email,
         fcmToken,
         phone,
-        dob: dob.toISOString(), // Convert date to string
+        dob: dob.toISOString(), 
         location,
         gender,
-        profileImage,
+        profileImage, // Now stores the Firebase Storage URL
       };
-
-      // Save user data to Firebase Realtime Database
+  
       await firebase
         .app()
         .database('https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/')
         .ref(`users/${user.uid}`)
         .set(userData);
-
+  
       await AsyncStorage.setItem('userId', user.uid);
-      const role= await AsyncStorage.getItem('role')
-      role=='employee' ? navigation.replace('Skill') :navigation.replace('home1')
-      
+      const role = await AsyncStorage.getItem('role');
+      role == 'employee' ? navigation.replace('Skill') : navigation.replace('home1');
+  
     } catch (error) {
       console.error(error);
       Alert.alert('Error', 'Failed to create user. Please try again.');
     }
   };
+  
 
   // Handle Login with Formik
   const handleLogin = async (values) => {
