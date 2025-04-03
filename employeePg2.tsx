@@ -10,6 +10,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import messaging from '@react-native-firebase/messaging';
 import { firebase } from '@react-native-firebase/database';
+import * as ImagePicker from 'react-native-image-picker';
 
 
 PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
@@ -20,9 +21,23 @@ const EmployeePg2 = ({ navigation }) => {
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  const pickImageFromGallery = (setFieldValue) => {
+    const options = { mediaType: 'photo', quality: 1 };
+
+    ImagePicker.launchImageLibrary(options, (response) => {
+      if (response.didCancel) {
+        console.log("User cancelled image picker");
+      } else if (response.errorMessage) {
+        console.log("ImagePicker Error: ", response.errorMessage);
+      } else if (response.assets && response.assets.length > 0) {
+        setFieldValue("profileImage", response.assets[0].uri);
+      }
+    });
+  };
+
   // Handle SignUp with Formik
   const handleSignUp = async (values) => {
-    const { email, password, confirmPassword, name, phone, dob, location, gender } = values;
+    const { email, password, confirmPassword, name, phone, dob, location, gender , profileImage } = values;
 
     if (password !== confirmPassword) {
       Alert.alert('Passwords do not match', 'Please ensure both passwords are the same.');
@@ -33,7 +48,6 @@ const EmployeePg2 = ({ navigation }) => {
       const userCredential = await auth().createUserWithEmailAndPassword(email, password);
       const user = userCredential.user;
       const fcmToken = await messaging().getToken();
-      const role_of_user= await AsyncStorage.getItem('role')
 
       const userData = {
         uid: user.uid,
@@ -44,7 +58,7 @@ const EmployeePg2 = ({ navigation }) => {
         dob: dob.toISOString(), // Convert date to string
         location,
         gender,
-        role: role_of_user,
+        profileImage,
       };
 
       // Save user data to Firebase Realtime Database
@@ -156,6 +170,7 @@ const EmployeePg2 = ({ navigation }) => {
                     location: '',
                     password: '',
                     confirmPassword: '',
+                    profileImage: '',
                   }}
                   onSubmit={handleSignUp}
                 >
@@ -185,6 +200,23 @@ const EmployeePg2 = ({ navigation }) => {
                             value={values.phone}
                             keyboardType="numeric"
                           />
+                        </View>
+
+                        <View style={styles.unit}>
+                          <Text>Profile Image</Text>
+                          <TouchableOpacity
+                            style={styles.imagePicker}
+                            onPress={() => pickImageFromGallery(setFieldValue)}
+                          >
+                            <Text>Select Image from Gallery</Text>
+                          </TouchableOpacity>
+                          {values.profileImage ? (
+                            <Image 
+                            source={{ uri: values.profileImage }} 
+                            style={[styles.profileImage, { maxHeight: 150 }]} 
+                          />
+                          
+                          ) : null}
                         </View>
 
                         <View style={styles.unit}>
@@ -298,11 +330,24 @@ const EmployeePg2 = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   //styles by nikhil
+  unit: { margin: 10 },
+  unitInput: {
+    marginTop: 5, borderWidth: 0, width: "95%", height: 45,
+    backgroundColor: '#E5E5E5', color: 'grey', fontSize: 14,
+  },
+  imagePicker: {
+    padding: 10, backgroundColor: "#ddd",
+    alignItems: "center", borderRadius: 5, marginTop: 10,
+  },
+  profileImage: {
+    width: 50, height: 50, marginTop:10,
+    borderRadius: 20, alignSelf: "center",
+  },
   EmployeePgContainer:{
     padding:10,
   },
   unit:{
-    margin:10
+    margin:5,
   },
   unitInput:{
     marginTop:5,
@@ -422,15 +467,15 @@ const styles = StyleSheet.create({
     color:'#000000',
   },
   loginbtn:{
-   width:300,
-   height:40,
-   alignItems:'center',
-   justifyContent:'center',
-   backgroundColor:'#1294FF',
-   borderWidth:0,
-   borderColor:'#000000',
-   borderRadius:25,
-   margin:'auto'
+    width: 300,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1294FF',
+    borderRadius: 25,
+    marginTop: 20,  // Ensure spacing after inputs
+    marginBottom: 40,
+    left:50, // Prevent button from getting hidden
   },
   signupv:{
     

@@ -118,9 +118,9 @@ const UserProfile = ({ navigation }) => {
     </TouchableOpacity>
 
     <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Wp')}>
-      <Image source={require('./assets/Frame.png')} style={styles.icon} />
-      <Text style={styles.menuText}>Wp</Text>
-      <TouchableOpacity onPress={() => navigation.navigate('ChangeP')}>
+    <Icon name="star" size={30} color="gold" />
+      <Text style={styles.menuText}>My Review</Text>
+      <TouchableOpacity onPress={() => navigation.navigate('R')}>
         <Image source={require('./assets/chevron-right.png')} style={styles.chevron} />
       </TouchableOpacity>
     </TouchableOpacity>

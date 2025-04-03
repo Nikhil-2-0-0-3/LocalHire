@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { 
-  View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, FlatList 
+  View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, FlatList ,Image 
 } from "react-native";
 import StarRating from "react-native-star-rating-widget";
 import { firebase } from "@react-native-firebase/database";
@@ -173,7 +173,11 @@ const Reviews = ({ route }) => {
       <Text style={styles.header}>User Profile</Text>
 
       <View style={styles.card}>
-        <Icon name="user" size={50} color="#4335A7" style={{ marginBottom: 10 }} />
+      {user.profileImage ? (
+          <Image source={{ uri: user.profileImage }} style={styles.profileImage} />
+        ) : (
+          <Icon name="user" size={50} color="#4335A7" style={{ marginBottom: 10 }} />
+        )}
         <Text style={styles.info}>Name: {user.name}</Text>
         <Text style={styles.info}>Location: {user.location}</Text>
         
@@ -308,6 +312,12 @@ const styles = StyleSheet.create({
   skillItem: {
     fontSize: 14,
     color: "#555",
+  },
+  profileImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    marginBottom: 10,
   },
 });
 

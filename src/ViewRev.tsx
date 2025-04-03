@@ -1,122 +1,92 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, SafeAreaView } from "react-native";
+import React, { useState, useEffect } from "react";
+import { 
+  View, Text, FlatList, StyleSheet, ActivityIndicator 
+} from "react-native";
+import StarRating from "react-native-star-rating-widget";
 import { firebase } from "@react-native-firebase/database";
-import auth from "@react-native-firebase/auth";
-import Loading from "../components/Loading";
-import NavBar from "../components/NavBar";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const ViewRev = () => {
+const UserReviews = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState(null);
 
   useEffect(() => {
-    const fetchReviews = async () => {
+    const fetchUserReviews = async () => {
       try {
-        const currentUser = auth().currentUser;
-        if (!currentUser) {
-          console.warn("User not authenticated. Please log in.");
+        const uid = await AsyncStorage.getItem("userId");
+        if (!uid) {
+          console.error("User ID not found");
           setLoading(false);
           return;
         }
+        setUserId(uid);
 
-        const id = currentUser.uid; // Use Firebase Auth UID
-        setUserId(id);
-        
-        const reference = firebase
+        const db = firebase
           .app()
-          .database("https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/")
-          .ref(`users/${id}/reviews`);
+          .database("https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/");
 
-        reference.on("value", (snapshot) => {
-          if (snapshot.exists()) {
-            const reviewsData = snapshot.val();
-            const reviewsList = Object.keys(reviewsData).map((key) => ({
-              id: key,
-              ...reviewsData[key],
-            }));
-            setReviews(reviewsList);
-          } else {
-            setReviews([]);
-          }
-          setLoading(false);
-        });
+        const snapshot = await db.ref(`users/${uid}/reviews`).once("value");
+
+        if (snapshot.exists()) {
+          setReviews(Object.values(snapshot.val()));
+        } else {
+          setReviews([]);
+        }
       } catch (error) {
-        console.error("Error fetching reviews:", error);
-        setLoading(false);
+        console.error("Error fetching user reviews:", error);
       }
+      setLoading(false);
     };
-    
-    fetchReviews();
+
+    fetchUserReviews();
   }, []);
 
   if (loading) {
-    return <Loading />;
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#007bff" />
+      </View>
+    );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <NavBar />
-      <Text style={styles.heading}>My Reviews</Text>
+    <View style={styles.container}>
+      <Text style={styles.header}>My Reviews</Text>
       {reviews.length === 0 ? (
-        <Text style={styles.noReviews}>No reviews available</Text>
+        <Text style={styles.noReviews}>You have no reviews yet.</Text>
       ) : (
         <FlatList
           data={reviews}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, index) => (item.timestamp ? item.timestamp.toString() : index.toString())}
           renderItem={({ item }) => (
-            <View style={styles.card}>
-              <Text style={styles.reviewer}>Reviewer: {item.reviewedByName || "Anonymous"}</Text>
-              <Text style={styles.rating}>Rating: ⭐ {item.rating}</Text>
-              <Text style={styles.comment}>{item.feedback}</Text>
+            <View style={styles.reviewItem}>
+              <Text style={styles.reviewerName}>From: {item.reviewedByName}</Text>
+              <StarRating rating={item.rating} starSize={20} color="#f39c12" disabled />
+              <Text style={styles.reviewText}>{item.feedback}</Text>
               <Text style={styles.timestamp}>{new Date(item.timestamp).toLocaleString()}</Text>
             </View>
           )}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1, padding: 20, backgroundColor: "#f4f4f4" },
+  header: { fontSize: 22, fontWeight: "bold", marginBottom: 20, textAlign: "center" },
+  noReviews: { fontSize: 16, color: "#777", textAlign: "center", marginTop: 20 },
+  reviewItem: {
     backgroundColor: "#fff",
-    padding: 20,
-  },
-  heading: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 15,
-    textAlign: "center",
-  },
-  noReviews: {
-    fontSize: 16,
-    textAlign: "center",
-    color: "gray",
-  },
-  card: {
-    backgroundColor: "#f8f8f8",
-    padding: 15,
-    marginBottom: 10,
+    padding: 10,
     borderRadius: 5,
-    elevation: 3,
+    marginTop: 10,
+    elevation: 2,
   },
-  reviewer: {
-    fontWeight: "bold",
-  },
-  rating: {
-    color: "#1294FF",
-  },
-  comment: {
-    marginTop: 5,
-    fontSize: 14,
-  },
-  timestamp: {
-    fontSize: 12,
-    color: "gray",
-    marginTop: 5,
-  },
+  reviewerName: { fontSize: 18, fontWeight: "bold" },
+  reviewText: { fontSize: 16, marginVertical: 5 },
+  timestamp: { fontSize: 12, color: "#777" },
 });
 
-export default ViewRev;
+export default UserReviews;
