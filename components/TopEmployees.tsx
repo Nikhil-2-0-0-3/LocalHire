@@ -45,7 +45,7 @@ const TopEmployees = () => {
             name: userData[key].name || "N/A",
             location: userData[key].location || "Unknown",
             job: userData[key].skills || "Not specified",
-            rating: parseFloat(userData[key].rating) || 0,
+            rating: parseFloat(userData[key].averageRating) || 0,
             profileImage: userData[key].profileImage || null, // Fetch profile image if available
           }));
 

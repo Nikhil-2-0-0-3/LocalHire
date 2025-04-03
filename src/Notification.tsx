@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import Loading from '../components/Loading';
 import { useFocusEffect } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const NotificationsScreen = ({ navigation }) => {
   const [notifications, setNotifications] = useState([]);
@@ -253,7 +254,7 @@ const NotificationsScreen = ({ navigation }) => {
 
   // Render notification card
   const renderNotificationCard = ({ item }) => (
-    <View style={styles.card}>
+    <SafeAreaView style={styles.card}>
       <View style={styles.cardHeader}>
         <View style={styles.cardContent}>
           <Text style={styles.jobType}>{item.job_type || 'Job Application'}</Text>
@@ -307,7 +308,7 @@ const NotificationsScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 
   // Render response card

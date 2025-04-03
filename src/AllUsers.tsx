@@ -65,7 +65,7 @@ const AllUsers = () => {
             name: userData[key].name || "N/A",
             location: userData[key].location || "Unknown",
             job: userData[key].skills || [], // Default to empty array if skills are missing
-            rating: parseFloat(userData[key].rating) || 0, // Convert rating to number
+            rating: parseFloat(userData[key].averageRating) || 0, // Convert rating to number
             profileImage: userData[key].profileImage || null, 
 
           }));
@@ -157,6 +157,7 @@ const AllUsers = () => {
                   console.log(item)
                   navigation.navigate('Reviews', { user: item }) 
               AsyncStorage.setItem('rid',item.id)
+              AsyncStorage.setItem('userName',item.name)
               console.log(item.id)
               }}>
                   <Text style={{ color: 'white' }}>Profile</Text>

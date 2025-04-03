@@ -117,7 +117,7 @@ const UserProfile = ({ navigation }) => {
       </TouchableOpacity>
     </TouchableOpacity>
 
-    <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Wp')}>
+    <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('R')}>
     <Icon name="star" size={30} color="gold" />
       <Text style={styles.menuText}>My Review</Text>
       <TouchableOpacity onPress={() => navigation.navigate('R')}>

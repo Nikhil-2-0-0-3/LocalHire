@@ -10,14 +10,30 @@ import Icon from "react-native-vector-icons/FontAwesome";
 const SaveToDb = async (rating: number, feedback: string, userId: string, userName: string) => {
   try {
     const uid = await AsyncStorage.getItem("userId");
-    const reviewerName = await AsyncStorage.getItem("userName"); 
-
+    const reviewerName = await AsyncStorage.getItem("userName");
+    
     if (!uid || !reviewerName) {
       console.error("User ID or name not found");
       return;
     }
 
-    const userData = {
+    const db = firebase
+      .app()
+      .database("https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/");
+
+    // 1. Get current average rating and review count
+    const userRef = db.ref(`users/${userId}`);
+    const snapshot = await userRef.once("value");
+    const userData = snapshot.val();
+    
+    const currentAvg = userData.averageRating || 0;
+    const reviewCount = userData.reviewCount || 0;
+
+    // 2. Calculate new average rating
+    const newAvg = (currentAvg * reviewCount + rating) / (reviewCount + 1);
+
+    // 3. Prepare review data
+    const reviewData = {
       rating,
       feedback,
       reviewedBy: uid,
@@ -26,18 +42,21 @@ const SaveToDb = async (rating: number, feedback: string, userId: string, userNa
       timestamp: Date.now(),
     };
 
-    const db = firebase
-      .app()
-      .database("https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/");
-    
-    const revID = `${uid}_${userData.timestamp}`;
+    const revID = `${uid}_${reviewData.timestamp}`;
 
-    await db.ref(`users/${userId}/reviews/${revID}`).set(userData);
-    console.log("Review saved successfully");
+    // 4. Update all data in a single transaction
+    const updates = {
+      [`users/${userId}/reviews/${revID}`]: reviewData,
+      [`users/${userId}/averageRating`]: newAvg,
+      [`users/${userId}/reviewCount`]: reviewCount + 1
+    };
 
-    await updateAverageRating(userId);
+    await db.ref().update(updates);
+    console.log("Review and average rating updated successfully");
+
   } catch (error) {
     console.error("Error saving review:", error);
+    throw error; // Consider throwing the error for the caller to handle
   }
 };
 
@@ -79,6 +98,7 @@ const Reviews = ({ route }) => {
       fetchAverageRating(user.id);
       fetchUserReviews(user.id);
       fetchUserSkills(user.id);
+      console.log('entered')
     }
   }, [user, sortOrder]);
 
@@ -196,7 +216,7 @@ const Reviews = ({ route }) => {
           </View>
         )}
         
-        <Text style={styles.avgRating}>Average Rating: {averageRating.toFixed(1)}</Text>
+        <Text style={styles.avgRating}>Average Rating: {averageRating}</Text>
       </View>
 
       <Text style={styles.label}>Rating:</Text>

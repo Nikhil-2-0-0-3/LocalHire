@@ -66,7 +66,7 @@ export default function NavBar() {
 
                 <TouchableOpacity onPress={() => navigation.navigate('Notification')}>
                     <Icon
-                        name={ hasNotification? 'bell' : 'bell-slash'}
+                        name={ hasNotification? 'bell' : 'bell'}
                         size={20}
                         color="#1294FF"
                     />
@@ -74,6 +74,7 @@ export default function NavBar() {
                 <TouchableOpacity onPress={() => navigation.navigate('user1')}>
                     <Icon name="user-o" size={20} color="#1294FF" />
                 </TouchableOpacity>
+            
             </View>
         </View>
     );

@@ -30,6 +30,7 @@ import Rev from './src/Rev.tsx';
 import NotificationDetails from './src/NotificationDetails.tsx';
 import AcceptedJobsScreen from './src/AcceptedJobsScreen.tsx';
 import PostedJobsScreen from './src/PostedJobScreen.tsx';
+import MapScreen1 from './src/MapScreen1.tsx';
 
 
 // Request notification permissions
@@ -75,6 +76,7 @@ type RootStackParamList = {
   NotificationDetails:undefined;
   AcceptedJobsScreen:undefined;
   PostedJobs:undefined;
+  M:undefined;
 };
 
 // Define Props for HomeScreen
@@ -474,6 +476,7 @@ export default function App() {
         <Stack.Screen name="ChangeP" component={ChangePassword} />
        <Stack.Screen name="R" component={ViewRev}/>
        <Stack.Screen name="ReV" component={Rev}/>
+       <Stack.Screen name="M" component={MapScreen1}/>
 
       </Stack.Navigator>
     </NavigationContainer>

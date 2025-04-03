@@ -4,24 +4,23 @@ import { firebase } from '@react-native-firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import JobCard from '../components/JobCard';
 import Loading from '../components/Loading';
-import NavBar from '../components/NavBar';
-import SearchBar from '../components/SearchBar';
 
 type Job = {
   job_id: string;
   title: string;
   location: string;
-  date?: string;
+  date?: string; // Make date optional
   time: string;
   type: string;
-  no_of_users?: number; // Add no_of_users to the type
+  job_type: string;
 };
 
-const JobList = () => {
+const FilteredJobs = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Safe date parsing with validation
   const parseDate = (dateString?: string): Date | null => {
     if (!dateString) return null;
     
@@ -41,7 +40,7 @@ const JobList = () => {
 
   const getCurrentDate = (): Date => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0); // Normalize to start of day
     return today;
   };
 
@@ -54,7 +53,11 @@ const JobList = () => {
           return;
         }
 
-        const db = firebase.app().database('https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/');
+        const db = firebase
+          .app()
+          .database(
+            'https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/'
+          );
         const jobsRef = db.ref('Jobs');
 
         const snapshot = await jobsRef.once('value');
@@ -71,10 +74,10 @@ const JobList = () => {
             job_id: key,
             title: jobsData[key].title || 'No Title',
             location: jobsData[key].location || 'No Location',
-            date: jobsData[key].date,
+            date: jobsData[key].date, // Might be undefined
             time: jobsData[key].time || 'No Time',
             type: jobsData[key].type || 'No Type',
-            no_of_users: jobsData[key].no_of_users || 0 // Default to 0 if undefined
+            job_type: jobsData[key].job_type || 'No Job Type',
           }))
           .filter((job) => {
             // Only process type B jobs
@@ -86,9 +89,9 @@ const JobList = () => {
             const jobDate = parseDate(job.date);
             if (!jobDate) return false;
             
-            // Check if jobDate is in the future AND no_of_users > 0
-            return jobDate >= currentDate && (job.no_of_users || 0) > 0;
-          });
+            return jobDate >= currentDate;
+          })
+     // Limit to 3 jobs
 
         setJobs(jobsList);
       } catch (error) {
@@ -102,9 +105,7 @@ const JobList = () => {
     fetchJobs();
   }, []);
 
-  if (loading) {
-    return <Loading />;
-  }
+  
 
   if (error) {
     return (
@@ -116,25 +117,20 @@ const JobList = () => {
 
   return (
     <View style={styles.container}>
-      <NavBar/>
-      <View style={{ height: 45 }}>
-        <SearchBar />
-      </View>
+      <Text style={styles.heading}>Jobs Available</Text>
       <FlatList
-        style={{marginTop:30}}
         data={jobs}
         keyExtractor={(item) => item.job_id}
         renderItem={({ item }) => (
           <JobCard
             jobId={item.job_id}
-            title={item.title}
+            title={item.job_type}
             location={item.location}
             date={item.date || 'No Date'}
             time={item.time}
-            noOfUsers={item.no_of_users} // Pass no_of_users to JobCard if needed
           />
         )}
-        ListEmptyComponent={<Text>No available jobs found.</Text>}
+        ListEmptyComponent={<Text>No jobs found.</Text>}
       />
     </View>
   );
@@ -151,6 +147,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  heading: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
   errorText: {
     color: 'red',
     textAlign: 'center',
@@ -158,4 +159,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default JobList;
+export default FilteredJobs;
