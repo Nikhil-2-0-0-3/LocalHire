@@ -1,5 +1,13 @@
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import React, { useState, useEffect } from 'react';
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  TouchableOpacity,
+  SafeAreaView,
+  Animated,
+  Easing
+} from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import Icon2 from 'react-native-vector-icons/Feather';
 import { firebase } from '@react-native-firebase/database';
@@ -8,7 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 
 const checkNotification = async () => {
     const uid = await AsyncStorage.getItem('userId');
-    if (!uid) return false; // Handle case where userId is null
+    if (!uid) return false;
 
     const reference = firebase
         .app()
@@ -16,96 +24,160 @@ const checkNotification = async () => {
         .ref(`users/${uid}/notifications/`);
 
     const snapshot = await reference.once('value');
+    if (!snapshot.exists()) return false;
 
-    if (!snapshot.exists()) return false; // No notifications found
-
-    let hasActiveNotification = false; // Assume no active notifications initially
-
+    let hasActiveNotification = false;
     snapshot.forEach((childSnap) => {
-        const notificationData = childSnap.val(); // Get the notification data
-        console.log(notificationData.btnActive);
+        const notificationData = childSnap.val();
         if (notificationData.btnActive === true) {
-            console.log('Active notification found:', notificationData);
-            hasActiveNotification = true; // Set to true if any notification has btnActive: true
-            return true; // Exit the loop early
+            hasActiveNotification = true;
+            return true;
         }
-        return undefined; // Explicitly return undefined
+        return undefined;
     });
-    console.log(hasActiveNotification)
-
-    return hasActiveNotification; // Return true if at least one notification has btnActive: true
+    return hasActiveNotification;
 };
 
 export default function NavBar() {
     const navigation = useNavigation();
     const [hasNotification, setHasNotification] = useState(false);
+    const pulseAnim = new Animated.Value(1);
 
     useEffect(() => {
         const fetchNotifications = async () => {
             const result = await checkNotification();
             setHasNotification(result);
+            if (result) {
+                startPulseAnimation();
+            }
         };
         fetchNotifications();
+
+        const interval = setInterval(fetchNotifications, 30000); // Check every 30 seconds
+        return () => clearInterval(interval);
     }, []);
 
+    const startPulseAnimation = () => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulseAnim, {
+                    toValue: 1.2,
+                    duration: 500,
+                    easing: Easing.ease,
+                    useNativeDriver: true
+                }),
+                Animated.timing(pulseAnim, {
+                    toValue: 1,
+                    duration: 500,
+                    easing: Easing.ease,
+                    useNativeDriver: true
+                })
+            ])
+        ).start();
+    };
+
     return (
-        <View style={styles.container}>
-            {/* LocalHire Text on the far left */}
-            <View style={styles.titleContainer}>
-                <Text style={styles.title}>Local</Text>
-                <Text style={styles.title2}>Hire</Text>
+        <SafeAreaView style={styles.safeArea}>
+            <View style={styles.container}>
+                {/* Logo with gradient text effect */}
+                <View style={styles.logoContainer}>
+                    <Text style={styles.logoTextPrimary}>Local</Text>
+                    <Text style={styles.logoTextAccent}>Hire</Text>
+                </View>
 
+                {/* Navigation Icons */}
+                <View style={styles.navIcons}>
+                    <TouchableOpacity 
+                        style={styles.iconButton}
+                        onPress={() => navigation.navigate('home1')}
+                    >
+                        <Icon2 name="home" size={22} color="#6C63FF" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                        style={styles.iconButton}
+                        onPress={() => navigation.navigate('Notification')}
+                    >
+                        <View style={styles.notificationContainer}>
+                            <Icon 
+                                name="bell" 
+                                size={22} 
+                                color="#6C63FF" 
+                            />
+                            {hasNotification && (
+                                <Animated.View 
+                                    style={[
+                                        styles.notificationBadge,
+                                        { transform: [{ scale: pulseAnim }] }
+                                    ]}
+                                />
+                            )}
+                        </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                        style={styles.iconButton}
+                        onPress={() => navigation.navigate('user1')}
+                    >
+                        <Icon name="user" size={22} color="#6C63FF" />
+                    </TouchableOpacity>
+                </View>
             </View>
-           {/* <Text style={styles.title}>LocalHire</Text> */}
-
-            {/* Icons on the far right with a gap */}
-            <View style={styles.iconsContainer}>
-                <TouchableOpacity onPress={() => navigation.navigate('home1')}>
-                    <Icon2 name="home" size={20} color="#1294FF" />
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={() => navigation.navigate('Notification')}>
-                    <Icon
-                        name={ hasNotification? 'bell' : 'bell'}
-                        size={20}
-                        color="#1294FF"
-                    />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => navigation.navigate('user1')}>
-                    <Icon name="user-o" size={20} color="#1294FF" />
-                </TouchableOpacity>
-            
-            </View>
-        </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    titleContainer:{
-        flex:1,
-        flexDirection:'row',
-        alignItems:'center'
+    safeArea: {
+        backgroundColor: '#FFFFFF',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 5,
+        marginBottom: 0,
     },
-    
     container: {
         flexDirection: 'row',
-        justifyContent: 'space-between', // Space between title and icons
-        alignItems: 'center', // Vertically center items
-        marginVertical:10,
-        padding:10,
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        backgroundColor: '#FFFFFF',
     },
-    title: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#1294FF', // Optional: Add color to the title
-    },
-    title2: {
-        fontSize: 25,
-        fontWeight:'900',
-        color: '#1294FF', // Optional: Add color to the title
-    },
-    iconsContainer: {
+    logoContainer: {
         flexDirection: 'row',
-        gap: 20, // Gap between the two icons
+        alignItems: 'center',
+    },
+    logoTextPrimary: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: '#333333',
+    },
+    logoTextAccent: {
+        fontSize: 24,
+        fontWeight: '900',
+        color: '#6C63FF',
+        marginLeft: 2,
+    },
+    navIcons: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 25,
+    },
+    iconButton: {
+        padding: 8,
+    },
+    notificationContainer: {
+        position: 'relative',
+    },
+    notificationBadge: {
+        position: 'absolute',
+        top: -2,
+        right: -2,
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#FF4757',
     },
 });

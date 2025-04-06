@@ -1,20 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  Image, 
+  TouchableOpacity, 
+  ActivityIndicator, 
+  Alert,
+  SafeAreaView
+} from 'react-native';
 import auth from '@react-native-firebase/auth';
 import { firebase } from '@react-native-firebase/database';
 import Icon from "react-native-vector-icons/Feather";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CommonActions } from '@react-navigation/native';
-
-const clearAndNavigate = (navigation) => {
-  navigation.dispatch(
-    CommonActions.reset({
-      index: 0, // The active screen index
-      routes: [{ name: 'Details' }], // Replace with your target screen
-    })
-  );
-};
 
 const UserProfile = ({ navigation }) => {
   const [userData, setUserData] = useState({
@@ -26,7 +27,7 @@ const UserProfile = ({ navigation }) => {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      const user = auth().currentUser; // Get logged-in user from Firebase Auth
+      const user = auth().currentUser;
 
       if (user) {
         const userId = user.uid;
@@ -35,20 +36,21 @@ const UserProfile = ({ navigation }) => {
           .database('https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/')
           .ref(`users/${userId}`);
 
-        reference.once('value').then((snapshot) => {
+        try {
+          const snapshot = await reference.once('value');
           if (snapshot.exists()) {
             const data = snapshot.val();
             setUserData({
               name: data.name || 'N/A',
               email: user.email || 'Unknown',
-              profileImage: data.profileImage || null, // Ensure your database has this field
+              profileImage: data.profileImage || null,
             });
           }
-          setLoading(false);
-        }).catch((error) => {
+        } catch (error) {
           console.error('Error fetching user data:', error);
+        } finally {
           setLoading(false);
-        });
+        }
       } else {
         setLoading(false);
       }
@@ -69,8 +71,12 @@ const UserProfile = ({ navigation }) => {
             try {
               await auth().signOut();
               await AsyncStorage.clear();
-              clearAndNavigate(navigation)
-              //navigation.replace("Details"); // Redirect to Login screen
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: 'Details' }],
+                })
+              );
             } catch (error) {
               console.error("Logout Error:", error);
             }
@@ -83,79 +89,199 @@ const UserProfile = ({ navigation }) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#0057FF" />
-      </SafeAreaView>
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#6C63FF" />
+      </View>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-    <View>
-      <Text style={styles.account}>Accounts & Settings</Text>
-    </View>
-
-    <View style={styles.profile}>
-      <View style={styles.roundWhiteView}>
-        {userData.profileImage ? (
-          <Image source={{ uri: userData.profileImage }} style={styles.image} />
-        ) : (
-          <Image source={require('./assets/image.png')} style={styles.image} />
-        )}
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>My Profile</Text>
       </View>
-      <View style={styles.textContainer}>
-        <Text style={styles.name}>{userData.name}</Text>
-        <Text style={styles.email}>{userData.email}</Text>
+
+      {/* Profile Card */}
+      <View style={styles.profileCard}>
+        <View style={styles.profileImageContainer}>
+          {userData.profileImage ? (
+            <Image source={{ uri: userData.profileImage }} style={styles.profileImage} />
+          ) : (
+            <View style={styles.profilePlaceholder}>
+              <Ionicons name="person" size={32} color="#6C63FF" />
+            </View>
+          )}
+        </View>
+        <View style={styles.profileInfo}>
+          <Text style={styles.profileName}>{userData.name}</Text>
+          <Text style={styles.profileEmail}>{userData.email}</Text>
+        </View>
       </View>
-    </View>
 
-    <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChangeP')}>
-      <Image source={require('./assets/Frame.png')} style={styles.icon} />
-      <Text style={styles.menuText}>Change Password</Text>
-      <TouchableOpacity onPress={() => navigation.navigate('ChangeP')}>
-        <Image source={require('./assets/chevron-right.png')} style={styles.chevron} />
-      </TouchableOpacity>
-    </TouchableOpacity>
+      {/* Menu Items */}
+      <View style={styles.menuContainer}>
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          onPress={() => navigation.navigate('ChangeP')}
+        >
+          <View style={styles.menuIcon}>
+            <MaterialIcons name="lock-outline" size={24} color="#6C63FF" />
+          </View>
+          <Text style={styles.menuText}>Change Password</Text>
+          <Ionicons name="chevron-forward" size={20} color="#999" />
+        </TouchableOpacity>
 
-    <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('R')}>
-    <Icon name="star" size={30} color="gold" />
-      <Text style={styles.menuText}>My Review</Text>
-      <TouchableOpacity onPress={() => navigation.navigate('R')}>
-        <Image source={require('./assets/chevron-right.png')} style={styles.chevron} />
-      </TouchableOpacity>
-    </TouchableOpacity>
+        <View style={styles.divider} />
 
-    
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          onPress={() => navigation.navigate('R')}
+        >
+          <View style={styles.menuIcon}>
+            <Ionicons name="star-outline" size={24} color="#6C63FF" />
+          </View>
+          <Text style={styles.menuText}>My Reviews</Text>
+          <Ionicons name="chevron-forward" size={20} color="#999" />
+        </TouchableOpacity>
+      </View>
 
-    <View style={styles.logout}>
-      <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-        <Image source={require('./assets/logout.png')} style={[styles.icon, { tintColor: '#FFFFFF' }]} />
+      {/* Logout Button */}
+      <TouchableOpacity 
+        style={styles.logoutButton} 
+        onPress={handleLogout}
+      >
+        <Ionicons name="log-out-outline" size={24} color="#E74C3C" />
         <Text style={styles.logoutText}>Logout</Text>
-        <Image source={require('./assets/chevron-right.png')} style={[styles.chevron, styles.logoutChevron]} />
       </TouchableOpacity>
-    </View>
-  </SafeAreaView>
-);
+    </SafeAreaView>
+  );
 };
 
 const styles = StyleSheet.create({
-loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-container: { flex: 1, paddingHorizontal: 20 },
-account: { fontWeight: '800', fontSize: 25, marginTop: 30, marginBottom: 20, textAlign: 'center' },
-profile: { height: 120, backgroundColor: '#0057FF', borderRadius: 25, flexDirection: 'row', marginBottom: 30, paddingHorizontal: 15, alignItems: 'center' },
-roundWhiteView: { width: 64, height: 64, backgroundColor: '#FFFFFF', borderRadius: 75, alignItems: 'center', justifyContent: 'center' },
-textContainer: { marginLeft: 20, justifyContent: 'center' },
-name: { fontSize: 20, fontWeight: 'bold', color: '#FFFFFF' },
-email: { fontSize: 14, fontWeight: '300', color: '#FFFFFF' },
-image: { width: 50, height: 50, borderRadius: 25 },
-menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#E0E0E0' },
-icon: { width: 24, height: 24, marginRight: 15 },
-menuText: { flex: 1, fontSize: 16, color: '#333',left:20 },
-chevron: { width: 20, height: 20 },
-logout: { marginTop: 50 },
-logoutButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E5020B', padding: 15, borderRadius: 25 },
-logoutText: { flex: 1, fontSize: 16, color: '#FFFFFF', textAlign: 'center' },
-logoutChevron: { tintColor: '#FFFFFF' },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF'
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+    paddingHorizontal: 24,
+  },
+  header: {
+    paddingVertical: 24,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#333',
+  },
+  profileCard: {
+    borderRadius: 16,
+    padding: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 32,
+    backgroundColor: '#6C63FF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  profileImageContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  profileImage: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+  },
+  profilePlaceholder: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileInfo: {
+    flex: 1,
+    marginLeft: 20,
+  },
+  profileName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  profileEmail: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+  },
+  menuContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  menuIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(108, 99, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  menuText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#F0F0F0',
+    marginLeft: 56,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    marginTop: 32,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+    borderRadius: 12,
+  },
+  logoutText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#E74C3C',
+    marginLeft: 12,
+  },
 });
 
 export default UserProfile;

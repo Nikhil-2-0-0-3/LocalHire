@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { 
-  View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, FlatList ,Image 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  Alert, 
+  StyleSheet, 
+  FlatList, 
+  Image,
+  ScrollView,
+  SafeAreaView
 } from "react-native";
 import StarRating from "react-native-star-rating-widget";
 import { firebase } from "@react-native-firebase/database";
@@ -10,9 +19,9 @@ import Icon from "react-native-vector-icons/FontAwesome";
 const SaveToDb = async (rating: number, feedback: string, userId: string, userName: string) => {
   try {
     const uid = await AsyncStorage.getItem("userId");
-    const reviewerName = await AsyncStorage.getItem("userName");
+    //const reviewerName = await AsyncStorage.getItem("userName");
     
-    if (!uid || !reviewerName) {
+    if (!uid ) {
       console.error("User ID or name not found");
       return;
     }
@@ -21,7 +30,6 @@ const SaveToDb = async (rating: number, feedback: string, userId: string, userNa
       .app()
       .database("https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/");
 
-    // 1. Get current average rating and review count
     const userRef = db.ref(`users/${userId}`);
     const snapshot = await userRef.once("value");
     const userData = snapshot.val();
@@ -29,10 +37,19 @@ const SaveToDb = async (rating: number, feedback: string, userId: string, userNa
     const currentAvg = userData.averageRating || 0;
     const reviewCount = userData.reviewCount || 0;
 
-    // 2. Calculate new average rating
-    const newAvg = (currentAvg * reviewCount + rating) / (reviewCount + 1);
+    const newAvg = Math.floor((currentAvg * reviewCount + rating) / (reviewCount + 1));
 
-    // 3. Prepare review data
+    const nameref = await db.ref(`users/${uid}/name`).once("value");
+    let reviewerName = "";
+    if (nameref.exists()) {
+      reviewerName = nameref.val();
+    } else {
+      console.error("Reviewer name not found");
+      return;
+    }
+    
+
+
     const reviewData = {
       rating,
       feedback,
@@ -44,7 +61,6 @@ const SaveToDb = async (rating: number, feedback: string, userId: string, userNa
 
     const revID = `${uid}_${reviewData.timestamp}`;
 
-    // 4. Update all data in a single transaction
     const updates = {
       [`users/${userId}/reviews/${revID}`]: reviewData,
       [`users/${userId}/averageRating`]: newAvg,
@@ -56,7 +72,7 @@ const SaveToDb = async (rating: number, feedback: string, userId: string, userNa
 
   } catch (error) {
     console.error("Error saving review:", error);
-    throw error; // Consider throwing the error for the caller to handle
+    throw error;
   }
 };
 
@@ -98,7 +114,6 @@ const Reviews = ({ route }) => {
       fetchAverageRating(user.id);
       fetchUserReviews(user.id);
       fetchUserSkills(user.id);
-      console.log('entered')
     }
   }, [user, sortOrder]);
 
@@ -130,7 +145,6 @@ const Reviews = ({ route }) => {
 
       if (snapshot.exists()) {
         const skills = snapshot.val();
-        // Convert to array if it's not already one
         setUserSkills(Array.isArray(skills) ? skills : [skills].filter(Boolean));
       } else {
         setUserSkills([]);
@@ -164,180 +178,377 @@ const Reviews = ({ route }) => {
     }
   };
 
-  if (!user || !user.id) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Error: No user data found.</Text>
-      </View>
-    );
-  }
-
   const handleSubmit = async () => {
     if (!rating || feedback.trim() === "") {
       Alert.alert("Error", "Please provide a rating and feedback.");
       return;
     }
 
-    await SaveToDb(rating, feedback, user.id, user.name);
-
-    Alert.alert("Review Submitted", "Thank you for your feedback!");
-    setRating(0);
-    setFeedback("");
-
-    fetchUserReviews(user.id);
-    fetchAverageRating(user.id);
+    try {
+      await SaveToDb(rating, feedback, user.id, user.name);
+      Alert.alert("Success", "Thank you for your feedback!");
+      setRating(0);
+      setFeedback("");
+      fetchUserReviews(user.id);
+      fetchAverageRating(user.id);
+    } catch (error) {
+      Alert.alert("Error", "Failed to submit review. Please try again.");
+    }
   };
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.header}>User Profile</Text>
+  if (!user || !user.id) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.errorContainer}>
+          <Icon name="exclamation-circle" size={30} color="#ff4444" />
+          <Text style={styles.errorText}>No user data found</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
-      <View style={styles.card}>
-      {user.profileImage ? (
-          <Image source={{ uri: user.profileImage }} style={styles.profileImage} />
-        ) : (
-          <Icon name="user" size={50} color="#4335A7" style={{ marginBottom: 10 }} />
-        )}
-        <Text style={styles.info}>Name: {user.name}</Text>
-        <Text style={styles.info}>Location: {user.location}</Text>
-        
-        {/* Display user skills */}
+  return (
+    <View style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.headerContainer}>
+          <Text style={styles.header}>User Profile</Text>
+        </View>
+
+        {/* Profile Card */}
+        <View style={styles.profileCard}>
+          {user.profileImage ? (
+            <Image source={{ uri: user.profileImage }} style={styles.profileImage} />
+          ) : (
+            <View style={styles.profilePlaceholder}>
+              <Icon name="user" size={40} color="#6C63FF" />
+            </View>
+          )}
+          
+          <View style={styles.profileInfo}>
+            <Text style={styles.userName}>{user.name}</Text>
+            <View style={styles.locationContainer}>
+              <Icon name="map-marker" size={16} color="#6C63FF" />
+              <Text style={styles.userLocation}>{user.location}</Text>
+            </View>
+            
+            <View style={styles.ratingContainer}>
+              <StarRating 
+                rating={rating} 
+                onChange={() => {}} 
+                starSize={20} 
+                color="#FFD700"
+                enableHalfStar
+                disabled
+              />
+              <Text style={styles.ratingText}>{averageRating}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Skills Section */}
         {userSkills.length > 0 && (
-          <View style={styles.skillsContainer}>
-            <Text style={styles.skillsTitle}>Skills:</Text>
-            <View style={styles.skillsList}>
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Skills</Text>
+            <View style={styles.skillsContainer}>
               {userSkills.map((skill, index) => (
-                <Text key={index} style={styles.skillItem}>
-                  {skill}
-                  {index < userSkills.length - 1 ? ', ' : ''}
-                </Text>
+                <View key={index} style={styles.skillPill}>
+                  <Text style={styles.skillText}>{skill}</Text>
+                </View>
               ))}
             </View>
           </View>
         )}
-        
-        <Text style={styles.avgRating}>Average Rating: {averageRating}</Text>
-      </View>
 
-      <Text style={styles.label}>Rating:</Text>
-      <StarRating rating={rating} onChange={setRating} starSize={30} color="#f39c12" />
+        {/* Review Form */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Leave a Review</Text>
+          
+          <Text style={styles.label}>Your Rating</Text>
+          <StarRating 
+            rating={rating} 
+            onChange={setRating} 
+            starSize={30} 
+            color="#FFD700"
+            enableHalfStar
+          />
 
-      <Text style={styles.label}>Feedback:</Text>
-      <TextInput
-        style={styles.textInput}
-        placeholder="Write feedback here..."
-        value={feedback}
-        onChangeText={setFeedback}
-        multiline
-      />
+          <Text style={styles.label}>Your Feedback</Text>
+          <TextInput
+            style={styles.feedbackInput}
+            placeholder="Share your experience..."
+            placeholderTextColor="#999"
+            value={feedback}
+            onChangeText={setFeedback}
+            multiline
+            numberOfLines={4}
+          />
 
-      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-        <Text style={styles.buttonText}>Submit Review</Text>
-      </TouchableOpacity>
+          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+            <Text style={styles.submitButtonText}>Submit Review</Text>
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.sortContainer}>
-        <Text style={styles.sortLabel}>Sort by: </Text>
-        <TouchableOpacity onPress={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}>
-          <Text style={styles.sortText}>
-            {sortOrder === "asc" ? "Lowest First" : "Highest First"}
-          </Text>
-        </TouchableOpacity>
-      </View>
+        {/* Reviews Section */}
+        <View style={styles.sectionContainer}>
+          <View style={styles.reviewsHeader}>
+            <Text style={styles.sectionTitle}>User Reviews</Text>
+            <TouchableOpacity 
+              style={styles.sortButton}
+              onPress={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+            >
+              <Text style={styles.sortButtonText}>
+                {sortOrder === "asc" ? "Lowest First" : "Highest First"}
+              </Text>
+              <Icon 
+                name={sortOrder === "asc" ? "sort-amount-asc" : "sort-amount-desc"} 
+                size={16} 
+                color="#6C63FF" 
+              />
+            </TouchableOpacity>
+          </View>
 
-      <Text style={styles.reviewHeader}>User Reviews:</Text>
-      {reviews.length === 0 ? (
-        <Text style={styles.noReviews}>No reviews available</Text>
-      ) : (
-        <FlatList
-          data={reviews}
-          keyExtractor={(item, index) => (item.timestamp ? item.timestamp.toString() : index.toString())}
-          renderItem={({ item }) => (
-            <View style={styles.reviewItem}>
-              <Text style={styles.reviewerName}>{item.reviewedByName}</Text>
-              <StarRating rating={item.rating} starSize={20} color="#f39c12" disabled />
-              <Text style={styles.reviewText}>{item.feedback}</Text>
-              <Text style={styles.timestamp}>{new Date(item.timestamp).toLocaleString()}</Text>
+          {reviews.length === 0 ? (
+            <View style={styles.noReviewsContainer}>
+              <Icon name="comment-o" size={40} color="#CCCCCC" />
+              <Text style={styles.noReviewsText}>No reviews yet</Text>
             </View>
+          ) : (
+            <FlatList
+              data={reviews}
+              scrollEnabled={false}
+              keyExtractor={(item, index) => (item.timestamp ? item.timestamp.toString() : index.toString())}
+              renderItem={({ item }) => (
+                <View style={styles.reviewCard}>
+                  <View style={styles.reviewHeader}>
+                    <Text style={styles.reviewerName}>{item.reviewedByName}</Text>
+                    <StarRating 
+                      rating={item.rating} 
+                      starSize={16} 
+                      color="#FFD700"
+                      enableHalfStar
+                      disabled
+                    />
+                  </View>
+                  <Text style={styles.reviewText}>{item.feedback}</Text>
+                  <Text style={styles.reviewDate}>
+                    {new Date(item.timestamp).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </Text>
+                </View>
+              )}
+            />
           )}
-        />
-      )}
+        </View>
+      </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#f4f4f4" },
-  header: { fontSize: 22, fontWeight: "bold", marginBottom: 20, textAlign: "center" },
-  card: { 
-    backgroundColor: "#fff", 
-    padding: 15, 
-    borderRadius: 8, 
-    marginBottom: 20, 
-    elevation: 3 
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
   },
-  info: { fontSize: 16, marginBottom: 5 },
-  avgRating: { fontSize: 18, fontWeight: "bold", marginTop: 10, color: "#f39c12" },
-  label: { fontSize: 16, fontWeight: "bold", marginTop: 10, marginBottom: 5 },
-  textInput: {
-    backgroundColor: "#fff",
-    padding: 10,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    marginBottom: 10,
-    minHeight: 100,
-    textAlignVertical: "top",
+  container: {
+    padding: 20,
+    paddingBottom: 40,
   },
-  button: {
-    backgroundColor: "#007bff",
-    padding: 12,
-    borderRadius: 5,
-    alignItems: "center",
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 18,
+    color: '#ff4444',
     marginTop: 10,
+    textAlign: 'center',
   },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
+  headerContainer: {
+    marginBottom: 20,
   },
-  sortContainer: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
-  sortLabel: { fontSize: 16, color: "#000" },
-  sortText: { fontSize: 16, color: "#007bff" },
-  reviewHeader: { fontSize: 20, fontWeight: "bold", marginTop: 20, marginBottom: 10 },
-  noReviews: { fontSize: 16, color: "#777", textAlign: "center", marginTop: 20 },
-  reviewItem: {
-    backgroundColor: "#fff",
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 10,
-    elevation: 2,
+  header: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
   },
-  reviewerName: { fontSize: 18, fontWeight: "bold" },
-  reviewText: { fontSize: 16, marginVertical: 5 },
-  timestamp: { fontSize: 12, color: "#777" },
-  errorText: { fontSize: 18, color: "red", textAlign: "center", marginTop: 20 },
-  skillsContainer: {
-    marginTop: 5,
-    marginBottom: 10,
-  },
-  skillsTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 3,
-  },
-  skillsList: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  skillItem: {
-    fontSize: 14,
-    color: "#555",
+  profileCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
   },
   profileImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginRight: 20,
+  },
+  profilePlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 20,
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 5,
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 10,
+  },
+  userLocation: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 5,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ratingText: {
+    fontSize: 16,
+    color: '#333',
+    marginLeft: 10,
+    fontWeight: 'bold',
+  },
+  sectionContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+  },
+  skillsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  skillPill: {
+    backgroundColor: '#E9ECEF',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  skillText: {
+    fontSize: 14,
+    color: '#495057',
+  },
+  label: {
+    fontSize: 16,
+    color: '#495057',
+    marginBottom: 10,
+    fontWeight: '500',
+  },
+  feedbackInput: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    padding: 15,
+    marginBottom: 20,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    fontSize: 15,
+    color: '#333',
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
+  },
+  submitButton: {
+    backgroundColor: '#6C63FF',
+    borderRadius: 8,
+    padding: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  reviewsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sortButtonText: {
+    color: '#6C63FF',
+    fontSize: 14,
+    fontWeight: '500',
+    marginRight: 5,
+  },
+  noReviewsContainer: {
+    padding: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noReviewsText: {
+    fontSize: 16,
+    color: '#999',
+    marginTop: 10,
+  },
+  reviewCard: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    padding: 15,
+    marginBottom: 12,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  reviewerName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  reviewText: {
+    fontSize: 14,
+    color: '#495057',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  reviewDate: {
+    fontSize: 12,
+    color: '#999',
   },
 });
 

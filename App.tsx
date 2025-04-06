@@ -31,6 +31,7 @@ import NotificationDetails from './src/NotificationDetails.tsx';
 import AcceptedJobsScreen from './src/AcceptedJobsScreen.tsx';
 import PostedJobsScreen from './src/PostedJobScreen.tsx';
 import MapScreen1 from './src/MapScreen1.tsx';
+import Search2 from './components/Search2.tsx';
 
 
 // Request notification permissions
@@ -77,6 +78,7 @@ type RootStackParamList = {
   AcceptedJobsScreen:undefined;
   PostedJobs:undefined;
   M:undefined;
+  Search2:undefined;
 };
 
 // Define Props for HomeScreen
@@ -469,6 +471,7 @@ export default function App() {
         <Stack.Screen name="NotificationDetails" component={NotificationDetails} />
         <Stack.Screen name="AcceptedJobsScreen" component={AcceptedJobsScreen} />
         <Stack.Screen name="PostedJobs" component={PostedJobsScreen} />
+        <Stack.Screen name="Search2" component={Search2} />
     
 
         <Stack.Screen name="home1" component={home} />

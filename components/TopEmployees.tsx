@@ -1,203 +1,312 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, SafeAreaView, Image } from "react-native";
+import { 
+  View, 
+  Text, 
+  FlatList, 
+  StyleSheet, 
+  TouchableOpacity, 
+  SafeAreaView, 
+  Image 
+} from "react-native";
 import { firebase } from "@react-native-firebase/database";
-import Icon from "react-native-vector-icons/FontAwesome";
 import Icon2 from "react-native-vector-icons/EvilIcons";
+import Icon from "react-native-vector-icons/FontAwesome";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { StackNavigationProp } from '@react-navigation/stack';
+import Loading from "../components/Loading";
+import NavBar from "../components/NavBar";
 
-type RootStackParamList = {
-  JobDetails: undefined;
-  AllUser: undefined;
-  Reviews: { user: User };
-};
-
-type JobDetails2ScreenNavigationProp = StackNavigationProp<RootStackParamList, "JobDetails">;
-type AllUserScreenNavigationProp = StackNavigationProp<RootStackParamList, "AllUser">;
-
-// Define TypeScript type for users
 type User = {
   id: string;
   name: string;
   location: string;
-  job: string;
+  job: string[];
   rating: number;
-  profileImage?: string; // New field for profile image
+  profileImage?: string;
 };
 
 const TopEmployees = () => {
-  const [topUsers, setTopUsers] = useState<User[]>([]);
-  const navigation = useNavigation<JobDetails2ScreenNavigationProp | AllUserScreenNavigationProp>();
+  const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      const uid = await AsyncStorage.getItem("userId");
+      setCurrentUserId(uid);
+    };
+    fetchCurrentUser();
+  }, []);
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const reference = firebase
-        .app()
-        .database("https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/")
-        .ref("users");
+      try {
+        const reference = firebase
+          .app()
+          .database("https://localhire-cb5a2-default-rtdb.asia-southeast1.firebasedatabase.app/")
+          .ref("users");
 
-      reference.once("value").then((snapshot) => {
+        const snapshot = await reference.once("value");
         if (snapshot.exists()) {
           const userData = snapshot.val();
           const userList: User[] = Object.keys(userData).map((key) => ({
             id: key,
             name: userData[key].name || "N/A",
             location: userData[key].location || "Unknown",
-            job: userData[key].skills || "Not specified",
+            job: userData[key].skills || [],
             rating: parseFloat(userData[key].averageRating) || 0,
-            profileImage: userData[key].profileImage || null, // Fetch profile image if available
+            profileImage: userData[key].profileImage || null,
           }));
 
-          const sortedUsers = userList.sort((a, b) => b.rating - a.rating).slice(0, 3);
-          setTopUsers(sortedUsers);
+          setUsers(userList);
         }
-      });
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchUsers();
   }, []);
 
+  useEffect(() => {
+    if (users.length > 0 && currentUserId) {
+      let filtered = users.filter(user => {
+        // Filter out current user and users with empty skills
+        if (user.id === currentUserId || user.job.length === 0) {
+          return false;
+        }
+        return true;
+      });
+
+      // Sort by rating and take top 3
+      filtered = filtered.sort((a, b) => b.rating - a.rating).slice(0, 3);
+      setFilteredUsers(filtered);
+    }
+  }, [users, currentUserId]);
+
   const handleHire = async (id: string) => {
     try {
       if (id) {
         await AsyncStorage.setItem("receiver_id", id);
+        navigation.navigate("JobDetails");
       }
-      navigation.navigate("JobDetails");
     } catch (error) {
-      console.error("Error saving FCM Token:", error);
+      console.error("Error saving receiver_id:", error);
     }
   };
 
+  if (loading) {
+    return <Loading />;
+  }
+
   return (
-    <SafeAreaView style={styles.container1}>
-      <View style={styles.container}>
-        <Text style={styles.heading}>Top Rated Employees</Text>
-        <FlatList
-          data={topUsers}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.cardContainer}>
-              <View style={styles.card}>
-                {item.profileImage ? (
-                  <Image source={{ uri: item.profileImage }} style={styles.profileImage} />
-                ) : (
-                  <Icon name="user-circle" size={40} color="#FF7F3E" style={styles.icon} />
-                )}
-                <View style={styles.c2}>
-                  <Text style={styles.name}>{item.name}</Text>
-                  <View style={styles.loc}>
-                    <Icon2 name="location" size={20} color="#4335A7" />
-                    <Text> {item.location}</Text>
-                  </View>
+    <SafeAreaView style={styles.container}>
+      
+      
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Top Rated Employees</Text>
+      </View>
+
+      <FlatList
+        data={filteredUsers}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            <View style={styles.cardContent}>
+              {item.profileImage ? (
+                <Image source={{ uri: item.profileImage }} style={styles.profileImage} />
+              ) : (
+                <View style={styles.profilePlaceholder}>
+                  <Icon name="user" size={24} color="#6C63FF" />
                 </View>
-                <View style={styles.c3}>
-                  <Text style={styles.skills}>
-                    Skills: {Array.isArray(item.job) ? item.job.join(", ") : String(item.job)}
-                  </Text>
-                  <Text>⭐ {item.rating}</Text>
+              )}
+              
+              <View style={styles.userInfo}>
+                <Text style={styles.userName}>{item.name}</Text>
+                <View style={styles.locationContainer}>
+                  <Icon2 name="location" size={16} color="#6C63FF" />
+                  <Text style={styles.userLocation}>{item.location}</Text>
                 </View>
+                <Text style={styles.skills}>
+                  {item.job.join(", ")}
+                </Text>
               </View>
-              <View style={styles.btnContainer}>
-                <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('Reviews', { user: item })}>
-                  <Text style={{ color: 'white' }}>Profile</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.btn} onPress={() => handleHire(item.id)}>
-                  <Text style={{ color: 'white' }}>Hire</Text>
-                </TouchableOpacity>
+              
+              <View style={styles.ratingContainer}>
+                <Icon name="star" size={16} color="#FFD700" />
+                <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
               </View>
             </View>
-          )}
-        />
-        <TouchableOpacity style={styles.seeMoreBtn} onPress={() => navigation.navigate("AllUser")}>
+            
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity 
+                style={[styles.button, styles.profileButton]}
+                onPress={() => {
+                  AsyncStorage.setItem('rid', item.id);
+                  AsyncStorage.setItem('userName', item.name);
+                  navigation.navigate('Reviews', { user: item });
+                }}
+              >
+                <Text style={styles.buttonText}>Profile</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.button, styles.hireButton]}
+                onPress={() => handleHire(item.id)}
+              >
+                <Text style={styles.buttonText}>Hire</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Icon name="users" size={40} color="#CCCCCC" />
+            <Text style={styles.emptyText}>No top employees found</Text>
+          </View>
+        }
+      />
+      <TouchableOpacity style={styles.seeMoreBtn} onPress={() => navigation.navigate("AllUser")}>
           <Text style={styles.seeMoreTxt}>See More</Text>
         </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container1: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  heading: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-  cardContainer: {
-    marginBottom: 10,
-    backgroundColor: "#f8f8f8",
-    elevation: 5,
-    borderRadius: 10,
-    overflow: "hidden",
-  },
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f8f8f8",
-    borderRadius: 10,
-    padding: 15,
-  },
-  profileImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 10,
-  },
-  icon: {
-    marginRight: 10,
-  },
-  c2: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  c3: {
-    width: "40%",
-    justifyContent: "center",
-    alignItems: "flex-start",
-  },
-  name: {
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  loc: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  skills: {
-    flexWrap: "wrap",
-    flexShrink: 1,
-  },
-  btnContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 10,
-    marginVertical: 10,
-  },
-  btn: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    backgroundColor: "#1294FF",
-    borderRadius: 20,
-  },
   seeMoreBtn: {
     alignSelf: "center",
     marginTop: 20,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    backgroundColor: "#1294FF",
+    backgroundColor: "#6C63FF",
     borderRadius: 20,
   },
   seeMoreTxt: {
     color: "white",
     fontWeight: "bold",
+  },
+  container: {
+    flex: 1,
+    backgroundColor: "#F8F9FA",
+  },
+  header: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    marginLeft: '-40%',
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  profileImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 16,
+  },
+  profilePlaceholder: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  userInfo: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  userLocation: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 4,
+  },
+  skills: {
+    fontSize: 14,
+    color: '#495057',
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  ratingText: {
+    fontSize: 16,
+    color: '#333',
+    marginLeft: 4,
+    fontWeight: 'bold',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  button: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileButton: {
+    backgroundColor: '#E9ECEF',
+    marginRight: 8,
+  },
+  hireButton: {
+    backgroundColor: '#6C63FF',
+    marginLeft: 8,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#999',
+    marginTop: 16,
   },
 });
 

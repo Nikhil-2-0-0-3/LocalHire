@@ -118,10 +118,10 @@ const NotificationDetails = () => {
             <>
               <View style={styles.separator} />
               <View style={styles.detailRow}>
-                <Icon name="attach-money" size={24} color="#555" style={styles.icon} />
+                <Icon name="currency-rupee" size={24} color="#555" style={styles.icon} />
                 <View style={styles.detailTextContainer}>
                   <Text style={styles.detailLabel}>Salary</Text>
-                  <Text style={styles.detailValue}>${jobDetails.salary_range}</Text>
+                  <Text style={styles.detailValue}>₹{jobDetails.salary_range}</Text>
                 </View>
               </View>
             </>
