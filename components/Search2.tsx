@@ -7,7 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 const Search2 = () => {
   const navigation = useNavigation();
   const [searchText, setSearchText] = useState('');
-  const API_KEY = 'AIzaSyBpE4SoC4ostrQ8wL68-mYQc-5uhz10QQg'; // Replace with your actual key
+  const API_KEY = 'AIzaSyBpE4SoC4ostrQ8wL68-mYQc-5uhz10QQg'; 
 
   // Perform NER using Gemini API to extract date and job_type
   const performNER = async (inputText: string) => {
